@@ -1,0 +1,75 @@
+graph LR
+    %% Kafka Cluster Settings
+    subgraph Kafka [Кластер Kafka]
+        
+        T_RAW[(<b>raw.documents</b><br/>Ключ: doc_id<br/>Партиций: 12<br/>Очистка: delete, 7 дней)]
+        
+        T_EXP[(<b>content.expert_materials</b><br/>Ключ: material_id<br/>Партиций: 4<br/>Очистка: compact)]
+        
+        T_REF[(<b>ext.reference_data</b><br/>Ключ: entity_code<br/>Партиций: 8<br/>Очистка: compact)]
+        
+        T_EVENTS[(<b>telemetry.user_events</b><br/>Ключ: session_id<br/>Партиций: 50<br/>Очистка: delete, 48 часов)]
+        
+        T_BILL[(<b>billing.events</b><br/>Ключ: company_id<br/>Партиций: 6<br/>Очистка: delete, 30 дней)]
+    end
+
+    %% Источники данных и их настройки отправки
+    subgraph Producers [Источники]
+        P_LAW[<b>Парсер НПА</b><br/>Сжатие: LZ4<br/>acks=all]
+        P_COURT[<b>Аналитика судов</b><br/>Сжатие: Snappy<br/>acks=all]
+        P_API[<b>API интеграторы</b><br/>ЦБ РФ, ФНС]
+        P_CMS[<b>CMS экспертов</b><br/>Сжатие: LZ4]
+        
+        P_WEB[<b>Телеметрия</b><br/>Сжатие: Snappy<br/>acks=1]
+        P_CRM[<b>Биллинг</b><br/>acks=all<br/>enable.idempotence=true]
+    end
+
+    %% Routing to Kafka
+    P_LAW --> T_RAW
+    P_COURT --> T_RAW
+    P_CMS --> T_EXP
+    P_API --> T_REF
+    P_WEB --> T_EVENTS
+    P_CRM --> T_BILL
+
+    %% Потребители и Гарантии
+    subgraph Consumers [Потребители]
+        CG_CORE{<b>group: core_processors</b><br/>Гарантия: At-least-once<br/>}
+        
+        CG_ANALYTICS{<b>group: data_lake_writers</b><br/>Батч-чтение и коммит<br/>}
+        
+        CG_ML{<b>group: ml_pipeline</b><br/>Online-поток<br/>}
+        
+    end
+
+    %% Routing from Kafka
+    T_RAW --> CG_CORE
+    T_EXP --> CG_CORE
+    T_REF --> CG_CORE
+    
+    T_EVENTS --> CG_ANALYTICS
+    T_EVENTS --> CG_ML
+    
+    T_BILL --> CG_ANALYTICS
+
+    %% Базы данных
+    subgraph Sinks [Системы назначения]
+        DB[(Основная БД)]
+        ES[(ElasticSearch<br/>Поисковый индекс)]
+        DWH[(Data Lake)]
+    end
+    
+    CG_CORE --> DB
+    CG_CORE --> ES
+    CG_ANALYTICS --> DWH
+    
+    %% Стилизация для читаемости
+    classDef topic fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px;
+    classDef producer fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
+    classDef consumer fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
+    classDef storage fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
+    
+    class T_RAW,T_EXP,T_REF,T_EVENTS,T_BILL topic;
+    class P_LAW,P_COURT,P_API,P_CMS,P_WEB,P_CRM producer;
+    class CG_CORE,CG_ANALYTICS,CG_ML,CG_AUTH consumer;
+    class DB,ES,DWH storage;

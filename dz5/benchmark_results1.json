@@ -1,0 +1,128 @@
+{
+    "machine_info": {
+        "node": "172.28.118.236-red.dhcp.yndx.net",
+        "processor": "arm",
+        "machine": "arm64",
+        "python_compiler": "Clang 16.0.0 (clang-1600.0.26.6)",
+        "python_implementation": "CPython",
+        "python_implementation_version": "3.13.7",
+        "python_version": "3.13.7",
+        "python_build": [
+            "main",
+            "Aug 14 2025 11:12:11"
+        ],
+        "release": "25.2.0",
+        "system": "Darwin",
+        "cpu": {
+            "python_version": "3.13.7.final.0 (64 bit)",
+            "cpuinfo_version": [
+                9,
+                0,
+                0
+            ],
+            "cpuinfo_version_string": "9.0.0",
+            "arch": "ARM_8",
+            "bits": 64,
+            "count": 12,
+            "arch_string_raw": "arm64",
+            "brand_raw": "Apple M2 Pro"
+        }
+    },
+    "commit_info": {
+        "id": "unknown",
+        "time": null,
+        "author_time": null,
+        "dirty": false,
+        "error": "CalledProcessError(128, \"fatal: bad revision 'HEAD'\\n\")",
+        "project": "dz5",
+        "branch": "(unknown)"
+    },
+    "benchmarks": [
+        {
+            "group": null,
+            "name": "test_shuffle_join",
+            "fullname": "bench1.py::test_shuffle_join",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 17.833475042003556,
+                "max": 27.844250292000652,
+                "mean": 21.20426570839918,
+                "stddev": 3.9975910211833723,
+                "rounds": 5,
+                "median": 20.82493699999759,
+                "iqr": 4.6638810309978,
+                "q1": 18.197274979249414,
+                "q3": 22.861156010247214,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 17.833475042003556,
+                "hd15iqr": 27.844250292000652,
+                "ops": 0.04716032206688921,
+                "total": 106.0213285419959,
+                "data": [
+                    27.844250292000652,
+                    18.318541624998034,
+                    17.833475042003556,
+                    21.200124582996068,
+                    20.82493699999759
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_broadcast_join",
+            "fullname": "bench1.py::test_broadcast_join",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 8.977835749996302,
+                "max": 10.350922417004767,
+                "mean": 9.556594066800608,
+                "stddev": 0.5612579127159701,
+                "rounds": 5,
+                "median": 9.403081666998332,
+                "iqr": 0.893008292749073,
+                "q1": 9.113764562001961,
+                "q3": 10.006772854751034,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 8.977835749996302,
+                "hd15iqr": 10.350922417004767,
+                "ops": 0.10463979039080225,
+                "total": 47.78297033400304,
+                "data": [
+                    9.89205633399979,
+                    10.350922417004767,
+                    9.159074166003847,
+                    8.977835749996302,
+                    9.403081666998332
+                ],
+                "iterations": 1
+            }
+        }
+    ],
+    "datetime": "2026-02-27T13:28:55.488468+00:00",
+    "version": "5.2.3"
+}

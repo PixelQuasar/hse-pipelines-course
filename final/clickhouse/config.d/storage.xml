@@ -1,0 +1,23 @@
+<clickhouse>
+  <storage_configuration>
+    <disks>
+      <s3>
+        <type>s3</type>
+        <endpoint>http://minio:9000/ch-warehouse/</endpoint>
+        <access_key_id from_env="MINIO_ROOT_USER"/>
+        <secret_access_key from_env="MINIO_ROOT_PASSWORD"/>
+        <region>us-east-1</region>
+        <skip_access_check>true</skip_access_check>
+      </s3>
+    </disks>
+    <policies>
+      <s3_main>
+        <volumes>
+          <main>
+            <disk>s3</disk>
+          </main>
+        </volumes>
+      </s3_main>
+    </policies>
+  </storage_configuration>
+</clickhouse>

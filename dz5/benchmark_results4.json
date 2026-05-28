@@ -1,0 +1,128 @@
+{
+    "machine_info": {
+        "node": "172.28.118.236-red.dhcp.yndx.net",
+        "processor": "arm",
+        "machine": "arm64",
+        "python_compiler": "Clang 16.0.0 (clang-1600.0.26.6)",
+        "python_implementation": "CPython",
+        "python_implementation_version": "3.13.7",
+        "python_version": "3.13.7",
+        "python_build": [
+            "main",
+            "Aug 14 2025 11:12:11"
+        ],
+        "release": "25.2.0",
+        "system": "Darwin",
+        "cpu": {
+            "python_version": "3.13.7.final.0 (64 bit)",
+            "cpuinfo_version": [
+                9,
+                0,
+                0
+            ],
+            "cpuinfo_version_string": "9.0.0",
+            "arch": "ARM_8",
+            "bits": 64,
+            "count": 12,
+            "arch_string_raw": "arm64",
+            "brand_raw": "Apple M2 Pro"
+        }
+    },
+    "commit_info": {
+        "id": "unknown",
+        "time": null,
+        "author_time": null,
+        "dirty": false,
+        "error": "CalledProcessError(128, \"fatal: bad revision 'HEAD'\\n\")",
+        "project": "dz5",
+        "branch": "(unknown)"
+    },
+    "benchmarks": [
+        {
+            "group": null,
+            "name": "test_python_udf",
+            "fullname": "bench4.py::test_python_udf",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 1.2454425000032643,
+                "max": 1.2862757080001757,
+                "mean": 1.2699324250002975,
+                "stddev": 0.016892045638055322,
+                "rounds": 5,
+                "median": 1.2731652079964988,
+                "iqr": 0.027045145752708777,
+                "q1": 1.2572342189996562,
+                "q3": 1.284279364752365,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 1.2454425000032643,
+                "hd15iqr": 1.2862757080001757,
+                "ops": 0.7874434736161382,
+                "total": 6.349662125001487,
+                "data": [
+                    1.2836139170030947,
+                    1.2862757080001757,
+                    1.2454425000032643,
+                    1.2731652079964988,
+                    1.2611647919984534
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_native_functions",
+            "fullname": "bench4.py::test_native_functions",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.6679824169987114,
+                "max": 0.7747995000027004,
+                "mean": 0.7136215082005947,
+                "stddev": 0.0449392749122047,
+                "rounds": 5,
+                "median": 0.7003257079995819,
+                "iqr": 0.07499852125329198,
+                "q1": 0.6772234474992729,
+                "q3": 0.7522219687525649,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.6679824169987114,
+                "hd15iqr": 0.7747995000027004,
+                "ops": 1.4013030556232984,
+                "total": 3.5681075410029734,
+                "data": [
+                    0.7747995000027004,
+                    0.68030379099946,
+                    0.6679824169987114,
+                    0.7446961250025197,
+                    0.7003257079995819
+                ],
+                "iterations": 1
+            }
+        }
+    ],
+    "datetime": "2026-02-27T12:33:31.969321+00:00",
+    "version": "5.2.3"
+}

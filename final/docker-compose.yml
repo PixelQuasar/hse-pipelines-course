@@ -1,0 +1,161 @@
+name: cs-lakehouse
+
+networks:
+  lakehouse-net:
+
+volumes:
+  minio-data:
+  clickhouse-data:
+  grafana-data:
+
+services:
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    networks: [lakehouse-net]
+    ports:
+      - "9000:9000"
+      - "8012:9001"
+    env_file: [.env]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      retries: 10
+
+  mc-init:
+    image: minio/mc:latest
+    container_name: mc-init
+    networks: [lakehouse-net]
+    env_file: [.env]
+    depends_on:
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./data:/seed:ro
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD} &&
+        mc mb -p local/sessions &&
+        mc mb -p local/warehouse &&
+        mc mb -p local/ch-warehouse &&
+        mc mb -p local/parquet-exports &&
+        echo 'Uploading 10k seed files...' &&
+        mc cp --recursive /seed/ local/sessions/ &&
+        echo 'mc-init done'
+      "
+    restart: "no"
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.3
+    container_name: clickhouse
+    networks: [lakehouse-net]
+    ports:
+      - "8011:8123"
+      - "9100:9000"
+    ulimits:
+      nofile: { soft: 262144, hard: 262144 }
+    env_file: [.env]
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: ${MINIO_ROOT_USER}
+      CLICKHOUSE_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./clickhouse/config.d:/etc/clickhouse-server/config.d:ro
+      - ./clickhouse/init:/docker-entrypoint-initdb.d:ro
+      - clickhouse-data:/var/lib/clickhouse
+    depends_on:
+      mc-init: { condition: service_completed_successfully }
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: '2'
+
+  generator:
+    build:
+      context: ./generator
+      dockerfile: Dockerfile
+    image: cs-lakehouse/generator:latest
+    container_name: generator
+    networks: [lakehouse-net]
+    depends_on:
+      mc-init: { condition: service_completed_successfully }
+    env_file: [.env]
+    environment:
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: sessions
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION}
+      SESSIONS_PER_HOUR: ${SESSIONS_PER_HOUR}
+      BATCH_WINDOW_SECONDS: ${BATCH_WINDOW_SECONDS}
+      DIST_CACHE_PATH: /var/cache/generator/distributions.json
+      RUST_LOG: info
+    restart: unless-stopped
+
+  spark-job:
+    build:
+      context: ./spark-jobs
+      dockerfile: Dockerfile
+    image: cs-lakehouse/spark-job:latest
+    container_name: spark-job
+    networks: [lakehouse-net]
+    depends_on:
+      mc-init:    { condition: service_completed_successfully }
+      clickhouse: { condition: service_started }
+    env_file: [.env]
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION}
+      CH_JDBC_URL: ${CH_JDBC_URL}
+      CH_USER: ${MINIO_ROOT_USER}
+      CH_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./data:/seed:ro
+    entrypoint: ["tail", "-f", "/dev/null"]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    networks: [lakehouse-net]
+    ports:
+      - "8010:3000"
+    environment:
+      GF_INSTALL_PLUGINS: grafana-clickhouse-datasource
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_SECURITY_ADMIN_USER: ${MINIO_ROOT_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      clickhouse: { condition: service_started }
+    restart: unless-stopped
+
+  scheduler:
+    image: mcuadros/ofelia:latest
+    container_name: scheduler
+    networks: [lakehouse-net]
+    depends_on:
+      spark-job: { condition: service_started }
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./scheduler/config.ini:/etc/ofelia/config.ini:ro
+    command: daemon --config=/etc/ofelia/config.ini
+    restart: unless-stopped
+

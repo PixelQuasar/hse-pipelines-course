@@ -1,0 +1,296 @@
+{
+    "machine_info": {
+        "node": "10.211.114.118-vpn.dhcp.yndx.net",
+        "processor": "arm",
+        "machine": "arm64",
+        "python_compiler": "Clang 16.0.0 (clang-1600.0.26.6)",
+        "python_implementation": "CPython",
+        "python_implementation_version": "3.13.7",
+        "python_version": "3.13.7",
+        "python_build": [
+            "main",
+            "Aug 14 2025 11:12:11"
+        ],
+        "release": "25.2.0",
+        "system": "Darwin",
+        "cpu": {
+            "python_version": "3.13.7.final.0 (64 bit)",
+            "cpuinfo_version": [
+                9,
+                0,
+                0
+            ],
+            "cpuinfo_version_string": "9.0.0",
+            "arch": "ARM_8",
+            "bits": 64,
+            "count": 12,
+            "arch_string_raw": "arm64",
+            "brand_raw": "Apple M2 Pro"
+        }
+    },
+    "commit_info": {
+        "id": "unknown",
+        "time": null,
+        "author_time": null,
+        "dirty": false,
+        "error": "CalledProcessError(128, \"fatal: bad revision 'HEAD'\\n\")",
+        "project": "dz5",
+        "branch": "(unknown)"
+    },
+    "benchmarks": [
+        {
+            "group": null,
+            "name": "test_python_udf_simple",
+            "fullname": "bench5.py::test_python_udf_simple",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.30595616700156825,
+                "max": 0.322126125000068,
+                "mean": 0.3118011581987957,
+                "stddev": 0.007169303600398216,
+                "rounds": 5,
+                "median": 0.3079079999952228,
+                "iqr": 0.011504739755764604,
+                "q1": 0.3063887287462421,
+                "q3": 0.3178934685020067,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 0.30595616700156825,
+                "hd15iqr": 0.322126125000068,
+                "ops": 3.207172179143824,
+                "total": 1.5590057909939787,
+                "data": [
+                    0.316482583002653,
+                    0.322126125000068,
+                    0.30653291599446675,
+                    0.30595616700156825,
+                    0.3079079999952228
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_pandas_udf_simple",
+            "fullname": "bench5.py::test_pandas_udf_simple",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.24537987499934388,
+                "max": 0.2609214170006453,
+                "mean": 0.24982529179833363,
+                "stddev": 0.006516980751290834,
+                "rounds": 5,
+                "median": 0.2467301669967128,
+                "iqr": 0.0074187599966535345,
+                "q1": 0.2456139064997842,
+                "q3": 0.25303266649643774,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 0.24537987499934388,
+                "hd15iqr": 0.2609214170006453,
+                "ops": 4.002797286061932,
+                "total": 1.2491264589916682,
+                "data": [
+                    0.2609214170006453,
+                    0.2504030829950352,
+                    0.2467301669967128,
+                    0.24569191699993098,
+                    0.24537987499934388
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_native_spark_simple",
+            "fullname": "bench5.py::test_native_spark_simple",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.13057212500280002,
+                "max": 0.14671616700070444,
+                "mean": 0.13661916680284775,
+                "stddev": 0.006420729038207067,
+                "rounds": 5,
+                "median": 0.1352480000059586,
+                "iqr": 0.008887166502972832,
+                "q1": 0.13167728150074254,
+                "q3": 0.14056444800371537,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 0.13057212500280002,
+                "hd15iqr": 0.14671616700070444,
+                "ops": 7.319617176725129,
+                "total": 0.6830958340142388,
+                "data": [
+                    0.14671616700070444,
+                    0.1320456670000567,
+                    0.13057212500280002,
+                    0.138513875004719,
+                    0.1352480000059586
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_python_udf_complex",
+            "fullname": "bench5.py::test_python_udf_complex",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.34397758400155,
+                "max": 0.4036118330041063,
+                "mean": 0.35888804160349536,
+                "stddev": 0.025126503721383323,
+                "rounds": 5,
+                "median": 0.34858200000599027,
+                "iqr": 0.01758003150462173,
+                "q1": 0.3465094580005825,
+                "q3": 0.36408948950520426,
+                "iqr_outliers": 1,
+                "stddev_outliers": 1,
+                "outliers": "1;1",
+                "ld15iqr": 0.34397758400155,
+                "hd15iqr": 0.4036118330041063,
+                "ops": 2.78638428723355,
+                "total": 1.7944402080174768,
+                "data": [
+                    0.4036118330041063,
+                    0.34858200000599027,
+                    0.34735341600026004,
+                    0.35091537500557024,
+                    0.34397758400155
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_pandas_udf_complex",
+            "fullname": "bench5.py::test_pandas_udf_complex",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.3130977909968351,
+                "max": 0.3492604580023908,
+                "mean": 0.3234461164000095,
+                "stddev": 0.014851097201942135,
+                "rounds": 5,
+                "median": 0.3188246249992517,
+                "iqr": 0.014712198248162167,
+                "q1": 0.31395657250141085,
+                "q3": 0.328668770749573,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 0.3130977909968351,
+                "hd15iqr": 0.3492604580023908,
+                "ops": 3.0917050763512295,
+                "total": 1.6172305820000474,
+                "data": [
+                    0.3130977909968351,
+                    0.32180487499863375,
+                    0.3492604580023908,
+                    0.3188246249992517,
+                    0.3142428330029361
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_native_spark_complex",
+            "fullname": "bench5.py::test_native_spark_complex",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.15642383299564244,
+                "max": 0.17870229199616006,
+                "mean": 0.1674619833996985,
+                "stddev": 0.009656122123306025,
+                "rounds": 5,
+                "median": 0.16759075000300072,
+                "iqr": 0.017414208756235894,
+                "q1": 0.15865605199724087,
+                "q3": 0.17607026075347676,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.15642383299564244,
+                "hd15iqr": 0.17870229199616006,
+                "ops": 5.971504574941039,
+                "total": 0.8373099169984926,
+                "data": [
+                    0.17519291700591566,
+                    0.17870229199616006,
+                    0.16759075000300072,
+                    0.15642383299564244,
+                    0.15940012499777367
+                ],
+                "iterations": 1
+            }
+        }
+    ],
+    "datetime": "2026-02-27T16:03:52.747396+00:00",
+    "version": "5.2.3"
+}

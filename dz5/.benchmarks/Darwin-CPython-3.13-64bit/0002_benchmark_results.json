@@ -1,0 +1,114 @@
+{
+    "machine_info": {
+        "node": "10.215.211.140-vpn.dhcp.yndx.net",
+        "processor": "arm",
+        "machine": "arm64",
+        "python_compiler": "Clang 16.0.0 (clang-1600.0.26.6)",
+        "python_implementation": "CPython",
+        "python_implementation_version": "3.13.7",
+        "python_version": "3.13.7",
+        "python_build": [
+            "main",
+            "Aug 14 2025 11:12:11"
+        ],
+        "release": "25.2.0",
+        "system": "Darwin",
+        "cpu": {
+            "python_version": "3.13.7.final.0 (64 bit)",
+            "cpuinfo_version": [
+                9,
+                0,
+                0
+            ],
+            "cpuinfo_version_string": "9.0.0",
+            "arch": "ARM_8",
+            "bits": 64,
+            "count": 12,
+            "arch_string_raw": "arm64",
+            "brand_raw": "Apple M2 Pro"
+        }
+    },
+    "commit_info": {
+        "id": "unknown",
+        "time": null,
+        "author_time": null,
+        "dirty": false,
+        "error": "CalledProcessError(128, \"fatal: bad revision 'HEAD'\\n\")",
+        "project": "dz5",
+        "branch": "(unknown)"
+    },
+    "benchmarks": [
+        {
+            "group": null,
+            "name": "test_skewed_groupby",
+            "fullname": "bench2.py::test_skewed_groupby",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.2089517500025977,
+                "max": 0.5602513330013608,
+                "mean": 0.289069750001363,
+                "stddev": 0.1521078118634887,
+                "rounds": 5,
+                "median": 0.21991912500016042,
+                "iqr": 0.10838111475004553,
+                "q1": 0.21304478125148307,
+                "q3": 0.3214258960015286,
+                "iqr_outliers": 1,
+                "stddev_outliers": 1,
+                "outliers": "1;1",
+                "ld15iqr": 0.2089517500025977,
+                "hd15iqr": 0.5602513330013608,
+                "ops": 3.459372694636104,
+                "total": 1.445348750006815,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_salted_groupby",
+            "fullname": "bench2.py::test_salted_groupby",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.5019289160009066,
+                "max": 0.6595693330018548,
+                "mean": 0.57943291660049,
+                "stddev": 0.06770977878922461,
+                "rounds": 5,
+                "median": 0.5794938750004803,
+                "iqr": 0.12092313499942975,
+                "q1": 0.5182903857503334,
+                "q3": 0.6392135207497631,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.5019289160009066,
+                "hd15iqr": 0.6595693330018548,
+                "ops": 1.7258253222253241,
+                "total": 2.89716458300245,
+                "iterations": 1
+            }
+        }
+    ],
+    "datetime": "2026-02-26T18:02:13.518017+00:00",
+    "version": "5.2.3"
+}

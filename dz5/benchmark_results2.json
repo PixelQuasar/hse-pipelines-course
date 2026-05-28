@@ -1,0 +1,170 @@
+{
+    "machine_info": {
+        "node": "172.28.118.236-red.dhcp.yndx.net",
+        "processor": "arm",
+        "machine": "arm64",
+        "python_compiler": "Clang 16.0.0 (clang-1600.0.26.6)",
+        "python_implementation": "CPython",
+        "python_implementation_version": "3.13.7",
+        "python_version": "3.13.7",
+        "python_build": [
+            "main",
+            "Aug 14 2025 11:12:11"
+        ],
+        "release": "25.2.0",
+        "system": "Darwin",
+        "cpu": {
+            "python_version": "3.13.7.final.0 (64 bit)",
+            "cpuinfo_version": [
+                9,
+                0,
+                0
+            ],
+            "cpuinfo_version_string": "9.0.0",
+            "arch": "ARM_8",
+            "bits": 64,
+            "count": 12,
+            "arch_string_raw": "arm64",
+            "brand_raw": "Apple M2 Pro"
+        }
+    },
+    "commit_info": {
+        "id": "unknown",
+        "time": null,
+        "author_time": null,
+        "dirty": false,
+        "error": "CalledProcessError(128, \"fatal: bad revision 'HEAD'\\n\")",
+        "project": "dz5",
+        "branch": "(unknown)"
+    },
+    "benchmarks": [
+        {
+            "group": null,
+            "name": "test_many_small_partitions",
+            "fullname": "bench2.py::test_many_small_partitions",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 3.7486694590043044,
+                "max": 5.241414500000246,
+                "mean": 4.280532600000152,
+                "stddev": 0.5906688959415218,
+                "rounds": 5,
+                "median": 4.113698665998527,
+                "iqr": 0.7514459170015471,
+                "q1": 3.860117676998925,
+                "q3": 4.611563594000472,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 3.7486694590043044,
+                "hd15iqr": 5.241414500000246,
+                "ops": 0.23361578883897874,
+                "total": 21.402663000000757,
+                "data": [
+                    5.241414500000246,
+                    4.4016132920005475,
+                    4.113698665998527,
+                    3.7486694590043044,
+                    3.897267082997132
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_coalesced_partitions",
+            "fullname": "bench2.py::test_coalesced_partitions",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.5279134579977836,
+                "max": 0.7784161669987952,
+                "mean": 0.6298898334003752,
+                "stddev": 0.09336356362212175,
+                "rounds": 5,
+                "median": 0.6186211250023916,
+                "iqr": 0.10581942749922746,
+                "q1": 0.5695683957510482,
+                "q3": 0.6753878232502757,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.5279134579977836,
+                "hd15iqr": 0.7784161669987952,
+                "ops": 1.5875792034960066,
+                "total": 3.149449167001876,
+                "data": [
+                    0.7784161669987952,
+                    0.6410450420007692,
+                    0.5834533750021365,
+                    0.6186211250023916,
+                    0.5279134579977836
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_repartition_vs_coalesce",
+            "fullname": "bench2.py::test_repartition_vs_coalesce",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 2.4543638749964884,
+                "max": 3.2649432089965558,
+                "mean": 2.798244533599063,
+                "stddev": 0.404776165408807,
+                "rounds": 5,
+                "median": 2.553048083995236,
+                "iqr": 0.7347790839976369,
+                "q1": 2.4920991560029506,
+                "q3": 3.2268782400005875,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 2.4543638749964884,
+                "hd15iqr": 3.2649432089965558,
+                "ops": 0.3573669091435029,
+                "total": 13.991222667995316,
+                "data": [
+                    2.5046775830051047,
+                    3.2141899170019315,
+                    3.2649432089965558,
+                    2.4543638749964884,
+                    2.553048083995236
+                ],
+                "iterations": 1
+            }
+        }
+    ],
+    "datetime": "2026-02-27T12:44:40.969136+00:00",
+    "version": "5.2.3"
+}

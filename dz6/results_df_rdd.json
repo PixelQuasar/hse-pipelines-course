@@ -1,0 +1,316 @@
+{
+    "machine_info": {
+        "node": "10.215.156.144-vpn.dhcp.yndx.net",
+        "processor": "arm",
+        "machine": "arm64",
+        "python_compiler": "Clang 16.0.0 (clang-1600.0.26.6)",
+        "python_implementation": "CPython",
+        "python_implementation_version": "3.13.7",
+        "python_version": "3.13.7",
+        "python_build": [
+            "main",
+            "Aug 14 2025 11:12:11"
+        ],
+        "release": "25.2.0",
+        "system": "Darwin",
+        "cpu": {
+            "python_version": "3.13.7.final.0 (64 bit)",
+            "cpuinfo_version": [
+                9,
+                0,
+                0
+            ],
+            "cpuinfo_version_string": "9.0.0",
+            "arch": "ARM_8",
+            "bits": 64,
+            "count": 12,
+            "arch_string_raw": "arm64",
+            "brand_raw": "Apple M2 Pro"
+        }
+    },
+    "commit_info": {
+        "id": "unversioned",
+        "time": null,
+        "author_time": null,
+        "dirty": false,
+        "project": "pipelines-course",
+        "branch": "(unknown)"
+    },
+    "benchmarks": [
+        {
+            "group": null,
+            "name": "test_case1_dataframe_agg",
+            "fullname": "dz6/bench_df_vs_rdd.py::test_case1_dataframe_agg",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.06365545800508698,
+                "max": 0.07873004199791467,
+                "mean": 0.06998593339958462,
+                "stddev": 0.006452842250985555,
+                "rounds": 5,
+                "median": 0.06909245899441885,
+                "iqr": 0.011122364496259252,
+                "q1": 0.06415639575243404,
+                "q3": 0.07527876024869329,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 0.06365545800508698,
+                "hd15iqr": 0.07873004199791467,
+                "ops": 14.288585597487156,
+                "total": 0.34992966699792305,
+                "data": [
+                    0.07873004199791467,
+                    0.07412833299895283,
+                    0.06909245899441885,
+                    0.06432337500154972,
+                    0.06365545800508698
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_case1_rdd_agg",
+            "fullname": "dz6/bench_df_vs_rdd.py::test_case1_rdd_agg",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.25613029100350104,
+                "max": 0.292186541002593,
+                "mean": 0.26672023280116264,
+                "stddev": 0.014865285967429295,
+                "rounds": 5,
+                "median": 0.25909520799905295,
+                "iqr": 0.015620469004716142,
+                "q1": 0.2580502909986535,
+                "q3": 0.27367076000336965,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 0.25613029100350104,
+                "hd15iqr": 0.292186541002593,
+                "ops": 3.7492468775156267,
+                "total": 1.3336011640058132,
+                "data": [
+                    0.292186541002593,
+                    0.25869029099703766,
+                    0.26749883300362853,
+                    0.25613029100350104,
+                    0.25909520799905295
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_case2_dataframe_window",
+            "fullname": "dz6/bench_df_vs_rdd.py::test_case2_dataframe_window",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.12482362500304589,
+                "max": 0.14994075000140583,
+                "mean": 0.13292885800037765,
+                "stddev": 0.010541951765784967,
+                "rounds": 5,
+                "median": 0.127114666000125,
+                "iqr": 0.013842406498952187,
+                "q1": 0.1259613120000722,
+                "q3": 0.1398037184990244,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 0.12482362500304589,
+                "hd15iqr": 0.14994075000140583,
+                "ops": 7.522820966363518,
+                "total": 0.6646442900018883,
+                "data": [
+                    0.14994075000140583,
+                    0.1364247079982306,
+                    0.127114666000125,
+                    0.12634054099908099,
+                    0.12482362500304589
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_case3_dataframe_conditional",
+            "fullname": "dz6/bench_df_vs_rdd.py::test_case3_dataframe_conditional",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.05297299999801908,
+                "max": 0.08984183299617143,
+                "mean": 0.06824967271261682,
+                "stddev": 0.013256238548662676,
+                "rounds": 7,
+                "median": 0.06568229199911002,
+                "iqr": 0.020159437000984326,
+                "q1": 0.058254406749256304,
+                "q3": 0.07841384375024063,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.05297299999801908,
+                "hd15iqr": 0.08984183299617143,
+                "ops": 14.652084914908864,
+                "total": 0.47774770898831775,
+                "data": [
+                    0.08107387500058394,
+                    0.05763733400090132,
+                    0.06568229199911002,
+                    0.06010562499432126,
+                    0.0704337499992107,
+                    0.08984183299617143,
+                    0.05297299999801908
+                ],
+                "iterations": 1
+            }
+        }
+    ],
+    "datetime": "2026-03-06T14:18:23.734028+00:00",
+    "version": "5.2.3"
+}    "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.030015917000127956,
+                "max": 0.05066349999833619,
+                "mean": 0.03443039300015828,
+                "stddev": 0.00524375878696997,
+                "rounds": 14,
+                "median": 0.03319727149937535,
+                "iqr": 0.004292374003853183,
+                "q1": 0.031076209001184907,
+                "q3": 0.03536858300503809,
+                "iqr_outliers": 1,
+                "stddev_outliers": 1,
+                "outliers": "1;1",
+                "ld15iqr": 0.030015917000127956,
+                "hd15iqr": 0.05066349999833619,
+                "ops": 29.04410646707991,
+                "total": 0.48202550200221594,
+                "data": [
+                    0.03775962499639718,
+                    0.03536858300503809,
+                    0.03353945900016697,
+                    0.03259158299624687,
+                    0.037327750003896654,
+                    0.05066349999833619,
+                    0.0310181669992744,
+                    0.03285508399858372,
+                    0.034225708004669286,
+                    0.030015917000127956,
+                    0.031076209001184907,
+                    0.03075604199693771,
+                    0.031214834001730196,
+                    0.03361304099962581
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_case3_rdd_conditional",
+            "fullname": "dz6/bench_df_vs_rdd.py::test_case3_rdd_conditional",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.06260316699626856,
+                "max": 0.07996179199835751,
+                "mean": 0.0675292030628043,
+                "stddev": 0.004997673583084174,
+                "rounds": 16,
+                "median": 0.06570443749660626,
+                "iqr": 0.0062083960001473315,
+                "q1": 0.06402452050315333,
+                "q3": 0.07023291650330066,
+                "iqr_outliers": 1,
+                "stddev_outliers": 2,
+                "outliers": "2;1",
+                "ld15iqr": 0.06260316699626856,
+                "hd15iqr": 0.07996179199835751,
+                "ops": 14.80840813521771,
+                "total": 1.0804672490048688,
+                "data": [
+                    0.06421666600363096,
+                    0.06345437499840045,
+                    0.0628682500027935,
+                    0.07996179199835751,
+                    0.06951358300284483,
+                    0.07100462499511195,
+                    0.06593487499776529,
+                    0.06536970900197048,
+                    0.06444645800365834,
+                    0.06260316699626856,
+                    0.06547399999544723,
+                    0.07660266599850729,
+                    0.06798600000183797,
+                    0.06383237500267569,
+                    0.06624645800184226,
+                    0.07095225000375649
+                ],
+                "iterations": 1
+            }
+        }
+    ],
+    "datetime": "2026-03-06T12:57:11.988633+00:00",
+    "version": "5.2.3"
+}

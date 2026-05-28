@@ -1,0 +1,38 @@
+{
+  "partitionToWriteStats" : {
+    "" : [ {
+      "fileId" : "a164cd1b-9f70-4261-ae7d-f84eae6ef002-0",
+      "path" : "a164cd1b-9f70-4261-ae7d-f84eae6ef002-0_0-458-1434_20260313171410551.parquet",
+      "cdcStats" : null,
+      "prevCommit" : "null",
+      "numWrites" : 100000,
+      "numDeletes" : 0,
+      "numUpdateWrites" : 0,
+      "numInserts" : 100000,
+      "totalWriteBytes" : 3605731,
+      "totalWriteErrors" : 0,
+      "tempPath" : null,
+      "partitionPath" : "",
+      "totalLogRecords" : 0,
+      "totalLogFilesCompacted" : 0,
+      "totalLogSizeCompacted" : 0,
+      "totalUpdatedRecordsCompacted" : 0,
+      "totalLogBlocks" : 0,
+      "totalCorruptLogBlock" : 0,
+      "totalRollbackBlocks" : 0,
+      "fileSizeInBytes" : 3605731,
+      "minEventTime" : null,
+      "maxEventTime" : null,
+      "runtimeStats" : {
+        "totalScanTime" : 0,
+        "totalUpsertTime" : 0,
+        "totalCreateTime" : 1088
+      }
+    } ]
+  },
+  "compacted" : false,
+  "extraMetadata" : {
+    "schema" : "{\"type\":\"record\",\"name\":\"hudi_write_record\",\"namespace\":\"hoodie.hudi_write\",\"fields\":[{\"name\":\"transaction_id\",\"type\":[\"null\",\"string\"],\"default\":null},{\"name\":\"publisher_id\",\"type\":[\"null\",\"string\"],\"default\":null},{\"name\":\"geo_id\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"bid_price\",\"type\":[\"null\",\"double\"],\"default\":null},{\"name\":\"timestamp\",\"type\":[\"null\",\"long\"],\"default\":null},{\"name\":\"user_agent\",\"type\":[\"null\",\"string\"],\"default\":null},{\"name\":\"ip_address\",\"type\":[\"null\",\"string\"],\"default\":null},{\"name\":\"bid_request\",\"type\":[\"null\",\"string\"],\"default\":null},{\"name\":\"impression_id\",\"type\":\"string\"}]}"
+  },
+  "operationType" : "INSERT"
+}

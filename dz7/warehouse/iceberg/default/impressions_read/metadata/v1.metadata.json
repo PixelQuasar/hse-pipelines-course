@@ -1,0 +1,109 @@
+{
+  "format-version" : 2,
+  "table-uuid" : "bf5607a9-6881-4ebf-9cc8-ae1c5aced23e",
+  "location" : "/Users/quasarity/Documents/study/pipelines-course/dz7/warehouse/iceberg/default/impressions_read",
+  "last-sequence-number" : 1,
+  "last-updated-ms" : 1773411207484,
+  "last-column-id" : 9,
+  "current-schema-id" : 0,
+  "schemas" : [ {
+    "type" : "struct",
+    "schema-id" : 0,
+    "fields" : [ {
+      "id" : 1,
+      "name" : "transaction_id",
+      "required" : false,
+      "type" : "string"
+    }, {
+      "id" : 2,
+      "name" : "publisher_id",
+      "required" : false,
+      "type" : "string"
+    }, {
+      "id" : 3,
+      "name" : "geo_id",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 4,
+      "name" : "bid_price",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 5,
+      "name" : "timestamp",
+      "required" : false,
+      "type" : "long"
+    }, {
+      "id" : 6,
+      "name" : "user_agent",
+      "required" : false,
+      "type" : "string"
+    }, {
+      "id" : 7,
+      "name" : "ip_address",
+      "required" : false,
+      "type" : "string"
+    }, {
+      "id" : 8,
+      "name" : "bid_request",
+      "required" : false,
+      "type" : "string"
+    }, {
+      "id" : 9,
+      "name" : "impression_id",
+      "required" : false,
+      "type" : "string"
+    } ]
+  } ],
+  "default-spec-id" : 0,
+  "partition-specs" : [ {
+    "spec-id" : 0,
+    "fields" : [ ]
+  } ],
+  "last-partition-id" : 999,
+  "default-sort-order-id" : 0,
+  "sort-orders" : [ {
+    "order-id" : 0,
+    "fields" : [ ]
+  } ],
+  "properties" : {
+    "owner" : "quasarity",
+    "write.parquet.compression-codec" : "zstd"
+  },
+  "current-snapshot-id" : 5554589405518122337,
+  "refs" : {
+    "main" : {
+      "snapshot-id" : 5554589405518122337,
+      "type" : "branch"
+    }
+  },
+  "snapshots" : [ {
+    "sequence-number" : 1,
+    "snapshot-id" : 5554589405518122337,
+    "timestamp-ms" : 1773411207484,
+    "summary" : {
+      "operation" : "append",
+      "spark.app.id" : "local-1773411188899",
+      "added-data-files" : "1",
+      "added-records" : "100000",
+      "added-files-size" : "2130894",
+      "changed-partition-count" : "1",
+      "total-records" : "100000",
+      "total-files-size" : "2130894",
+      "total-data-files" : "1",
+      "total-delete-files" : "0",
+      "total-position-deletes" : "0",
+      "total-equality-deletes" : "0"
+    },
+    "manifest-list" : "/Users/quasarity/Documents/study/pipelines-course/dz7/warehouse/iceberg/default/impressions_read/metadata/snap-5554589405518122337-1-6962eb74-111b-4885-9ba3-20bb591741b3.avro",
+    "schema-id" : 0
+  } ],
+  "statistics" : [ ],
+  "partition-statistics" : [ ],
+  "snapshot-log" : [ {
+    "timestamp-ms" : 1773411207484,
+    "snapshot-id" : 5554589405518122337
+  } ],
+  "metadata-log" : [ ]
+}

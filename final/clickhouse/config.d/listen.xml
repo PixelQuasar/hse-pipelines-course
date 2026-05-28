@@ -1,0 +1,4 @@
+<clickhouse>
+  <!-- Listen on all interfaces so other compose services (spark-job) can connect -->
+  <listen_host>0.0.0.0</listen_host>
+</clickhouse>

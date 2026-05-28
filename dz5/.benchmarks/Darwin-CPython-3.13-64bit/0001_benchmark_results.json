@@ -1,0 +1,114 @@
+{
+    "machine_info": {
+        "node": "10.215.211.140-vpn.dhcp.yndx.net",
+        "processor": "arm",
+        "machine": "arm64",
+        "python_compiler": "Clang 16.0.0 (clang-1600.0.26.6)",
+        "python_implementation": "CPython",
+        "python_implementation_version": "3.13.7",
+        "python_version": "3.13.7",
+        "python_build": [
+            "main",
+            "Aug 14 2025 11:12:11"
+        ],
+        "release": "25.2.0",
+        "system": "Darwin",
+        "cpu": {
+            "python_version": "3.13.7.final.0 (64 bit)",
+            "cpuinfo_version": [
+                9,
+                0,
+                0
+            ],
+            "cpuinfo_version_string": "9.0.0",
+            "arch": "ARM_8",
+            "bits": 64,
+            "count": 12,
+            "arch_string_raw": "arm64",
+            "brand_raw": "Apple M2 Pro"
+        }
+    },
+    "commit_info": {
+        "id": "unknown",
+        "time": null,
+        "author_time": null,
+        "dirty": false,
+        "error": "CalledProcessError(128, \"fatal: bad revision 'HEAD'\\n\")",
+        "project": "dz5",
+        "branch": "(unknown)"
+    },
+    "benchmarks": [
+        {
+            "group": null,
+            "name": "test_shuffle_join",
+            "fullname": "bench1.py::test_shuffle_join",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 2.0854187500008265,
+                "max": 2.5089862079985323,
+                "mean": 2.238945799999783,
+                "stddev": 0.1596721795340593,
+                "rounds": 5,
+                "median": 2.1945951669986243,
+                "iqr": 0.13802364575076354,
+                "q1": 2.1574371249998876,
+                "q3": 2.295460770750651,
+                "iqr_outliers": 1,
+                "stddev_outliers": 1,
+                "outliers": "1;1",
+                "ld15iqr": 2.0854187500008265,
+                "hd15iqr": 2.5089862079985323,
+                "ops": 0.4466387708001225,
+                "total": 11.194728999998915,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_broadcast_join",
+            "fullname": "bench1.py::test_broadcast_join",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.26675520799835795,
+                "max": 0.31821462500010966,
+                "mean": 0.28725353319969144,
+                "stddev": 0.01882454443928857,
+                "rounds": 5,
+                "median": 0.28338512499976787,
+                "iqr": 0.014355822750076186,
+                "q1": 0.2789105832498535,
+                "q3": 0.2932664059999297,
+                "iqr_outliers": 1,
+                "stddev_outliers": 2,
+                "outliers": "2;1",
+                "ld15iqr": 0.26675520799835795,
+                "hd15iqr": 0.31821462500010966,
+                "ops": 3.4812452569724357,
+                "total": 1.4362676659984572,
+                "iterations": 1
+            }
+        }
+    ],
+    "datetime": "2026-02-26T17:49:24.862329+00:00",
+    "version": "5.2.3"
+}

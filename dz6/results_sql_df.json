@@ -1,0 +1,221 @@
+{
+    "machine_info": {
+        "node": "10.215.156.144-vpn.dhcp.yndx.net",
+        "processor": "arm",
+        "machine": "arm64",
+        "python_compiler": "Clang 16.0.0 (clang-1600.0.26.6)",
+        "python_implementation": "CPython",
+        "python_implementation_version": "3.13.7",
+        "python_version": "3.13.7",
+        "python_build": [
+            "main",
+            "Aug 14 2025 11:12:11"
+        ],
+        "release": "25.2.0",
+        "system": "Darwin",
+        "cpu": {
+            "python_version": "3.13.7.final.0 (64 bit)",
+            "cpuinfo_version": [
+                9,
+                0,
+                0
+            ],
+            "cpuinfo_version_string": "9.0.0",
+            "arch": "ARM_8",
+            "bits": 64,
+            "count": 12,
+            "arch_string_raw": "arm64",
+            "brand_raw": "Apple M2 Pro"
+        }
+    },
+    "commit_info": {
+        "id": "unversioned",
+        "time": null,
+        "author_time": null,
+        "dirty": false,
+        "project": "pipelines-course",
+        "branch": "(unknown)"
+    },
+    "benchmarks": [
+        {
+            "group": null,
+            "name": "test_sql_complex_filter",
+            "fullname": "dz6/bench_sql_vs_df.py::test_sql_complex_filter",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.07437199999549193,
+                "max": 0.09138537500257371,
+                "mean": 0.08271129180066054,
+                "stddev": 0.006158660011958886,
+                "rounds": 5,
+                "median": 0.08257095900626155,
+                "iqr": 0.007038311996439006,
+                "q1": 0.07916106275115453,
+                "q3": 0.08619937474759354,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.07437199999549193,
+                "hd15iqr": 0.09138537500257371,
+                "ops": 12.09024763402394,
+                "total": 0.41355645900330273,
+                "data": [
+                    0.09138537500257371,
+                    0.08257095900626155,
+                    0.08075741700304206,
+                    0.08447070799593348,
+                    0.07437199999549193
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_df_complex_filter",
+            "fullname": "dz6/bench_sql_vs_df.py::test_df_complex_filter",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.06275454099522904,
+                "max": 0.09923691699805204,
+                "mean": 0.0774278696253532,
+                "stddev": 0.011971361080738907,
+                "rounds": 8,
+                "median": 0.07313514550332911,
+                "iqr": 0.015741104001790518,
+                "q1": 0.06991974999982631,
+                "q3": 0.08566085400161683,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.06275454099522904,
+                "hd15iqr": 0.09923691699805204,
+                "ops": 12.91524621352306,
+                "total": 0.6194229570028256,
+                "data": [
+                    0.08205683300184319,
+                    0.07306945800519316,
+                    0.07320083300146507,
+                    0.08926487500139046,
+                    0.07066270799987251,
+                    0.06275454099522904,
+                    0.06917679199978011,
+                    0.09923691699805204
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_sql_string_ops",
+            "fullname": "dz6/bench_sql_vs_df.py::test_sql_string_ops",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.037187375004577916,
+                "max": 0.057432790999882855,
+                "mean": 0.04631640820007306,
+                "stddev": 0.007975442841120993,
+                "rounds": 5,
+                "median": 0.04431795799609972,
+                "iqr": 0.012058791746312636,
+                "q1": 0.040539593752328074,
+                "q3": 0.05259838549864071,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.037187375004577916,
+                "hd15iqr": 0.057432790999882855,
+                "ops": 21.59062066471775,
+                "total": 0.23158204100036528,
+                "data": [
+                    0.057432790999882855,
+                    0.041657000001578126,
+                    0.05098691699822666,
+                    0.037187375004577916,
+                    0.04431795799609972
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_df_string_ops",
+            "fullname": "dz6/bench_sql_vs_df.py::test_df_string_ops",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.0353612919934676,
+                "max": 0.06728104200010421,
+                "mean": 0.04574085766519905,
+                "stddev": 0.00937892855230993,
+                "rounds": 12,
+                "median": 0.04302497900062008,
+                "iqr": 0.00800443749903934,
+                "q1": 0.0405109999992419,
+                "q3": 0.048515437498281244,
+                "iqr_outliers": 1,
+                "stddev_outliers": 3,
+                "outliers": "3;1",
+                "ld15iqr": 0.0353612919934676,
+                "hd15iqr": 0.06728104200010421,
+                "ops": 21.862292292801246,
+                "total": 0.5488902919823886,
+                "data": [
+                    0.05939854099415243,
+                    0.044828375001088716,
+                    0.044220166993909515,
+                    0.043891290995816234,
+                    0.04144704200007254,
+                    0.05220249999547377,
+                    0.04215866700542392,
+                    0.04066620900266571,
+                    0.06728104200010421,
+                    0.03707937500439584,
+                    0.0353612919934676,
+                    0.0403557909958181
+                ],
+                "iterations": 1
+            }
+        }
+    ],
+    "datetime": "2026-03-06T12:57:22.697763+00:00",
+    "version": "5.2.3"
+}

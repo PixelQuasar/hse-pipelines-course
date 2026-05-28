@@ -1,0 +1,170 @@
+{
+    "machine_info": {
+        "node": "172.28.118.236-red.dhcp.yndx.net",
+        "processor": "arm",
+        "machine": "arm64",
+        "python_compiler": "Clang 16.0.0 (clang-1600.0.26.6)",
+        "python_implementation": "CPython",
+        "python_implementation_version": "3.13.7",
+        "python_version": "3.13.7",
+        "python_build": [
+            "main",
+            "Aug 14 2025 11:12:11"
+        ],
+        "release": "25.2.0",
+        "system": "Darwin",
+        "cpu": {
+            "python_version": "3.13.7.final.0 (64 bit)",
+            "cpuinfo_version": [
+                9,
+                0,
+                0
+            ],
+            "cpuinfo_version_string": "9.0.0",
+            "arch": "ARM_8",
+            "bits": 64,
+            "count": 12,
+            "arch_string_raw": "arm64",
+            "brand_raw": "Apple M2 Pro"
+        }
+    },
+    "commit_info": {
+        "id": "unknown",
+        "time": null,
+        "author_time": null,
+        "dirty": false,
+        "error": "CalledProcessError(128, \"fatal: bad revision 'HEAD'\\n\")",
+        "project": "dz5",
+        "branch": "(unknown)"
+    },
+    "benchmarks": [
+        {
+            "group": null,
+            "name": "test_python_udf",
+            "fullname": "bench3.py::test_python_udf",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.33538966600463027,
+                "max": 0.47447495899541536,
+                "mean": 0.37341068319801707,
+                "stddev": 0.05744377188031994,
+                "rounds": 5,
+                "median": 0.34853733299678424,
+                "iqr": 0.04948385425268498,
+                "q1": 0.342235447746134,
+                "q3": 0.391719301998819,
+                "iqr_outliers": 1,
+                "stddev_outliers": 1,
+                "outliers": "1;1",
+                "ld15iqr": 0.33538966600463027,
+                "hd15iqr": 0.47447495899541536,
+                "ops": 2.6780165779823366,
+                "total": 1.8670534159900853,
+                "data": [
+                    0.47447495899541536,
+                    0.36413408299995353,
+                    0.34451737499330193,
+                    0.34853733299678424,
+                    0.33538966600463027
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_native_functions",
+            "fullname": "bench3.py::test_native_functions",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.1602779590029968,
+                "max": 0.17766091600060463,
+                "mean": 0.1655732416009414,
+                "stddev": 0.007272042704073547,
+                "rounds": 5,
+                "median": 0.16275374999531778,
+                "iqr": 0.009268051504477626,
+                "q1": 0.1602984272503818,
+                "q3": 0.16956647875485942,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 0.1602779590029968,
+                "hd15iqr": 0.17766091600060463,
+                "ops": 6.039623252712317,
+                "total": 0.827866208004707,
+                "data": [
+                    0.17766091600060463,
+                    0.1602779590029968,
+                    0.16275374999531778,
+                    0.16686833300627768,
+                    0.16030524999951012
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_pandas_udf",
+            "fullname": "bench3.py::test_pandas_udf",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.26641475000360515,
+                "max": 0.29831116599962115,
+                "mean": 0.27699325020075777,
+                "stddev": 0.012439162681081343,
+                "rounds": 5,
+                "median": 0.272134292004921,
+                "iqr": 0.011598010247325874,
+                "q1": 0.2703315005001059,
+                "q3": 0.2819295107474318,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 0.26641475000360515,
+                "hd15iqr": 0.29831116599962115,
+                "ops": 3.610196274729529,
+                "total": 1.3849662510037888,
+                "data": [
+                    0.29831116599962115,
+                    0.276468958996702,
+                    0.272134292004921,
+                    0.2716370839989395,
+                    0.26641475000360515
+                ],
+                "iterations": 1
+            }
+        }
+    ],
+    "datetime": "2026-02-27T12:24:07.485330+00:00",
+    "version": "5.2.3"
+}
