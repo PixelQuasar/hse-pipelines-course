@@ -89,5 +89,12 @@ docker-compose.override.yml
 # Vendored third-party dataset clone (Hugging Face oak, ~2GB + nested .git/lfs)
 dz3/oak/
 
+# Criterion (Rust bench) auto-generated HTML reports
+dz3/report0/
+dz3/report1/
+dz3/report1-singlethreaded/
+dz3/reports/
+**/criterion/
+
 .claude/
 .ai/

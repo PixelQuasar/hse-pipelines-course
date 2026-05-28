@@ -96,6 +96,10 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
 
+      - name: ensure destination dir exists on host
+        run: |
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p \"$DEPLOY_PATH\""
+
       - name: rsync project to host
         run: |
           rsync -az --delete \
