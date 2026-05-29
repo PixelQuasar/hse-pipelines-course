@@ -521,36 +521,6 @@
       }
     },
     {
-      "id": 19,
-      "type": "stat",
-      "title": "Parquet snapshot bronze (last partition date)",
-      "gridPos": {"x": 18, "y": 69, "w": 6, "h": 5},
-      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
-          "editorType": "sql",
-          "rawSql": "SELECT toString(max(event_date)) AS last_date FROM s3(minio_s3, url='http://minio:9000/parquet-exports/bronze/*.parquet', format='Parquet')",
-          "format": 1,
-          "queryType": "table"
-        }
-      ],
-      "options": {
-        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
-        "textMode": "value_and_name",
-        "colorMode": "value",
-        "graphMode": "none"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {"mode": "thresholds"},
-          "thresholds": {"steps": [{"color": "purple", "value": null}]},
-          "displayName": "Parquet up to"
-        }
-      }
-    },
-    {
       "id": 20,
       "type": "stat",
       "title": "Parquet файлов в S3: bronze",

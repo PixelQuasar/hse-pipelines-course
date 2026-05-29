@@ -6,8 +6,6 @@ import java.util.Locale
 
 object TimeParser {
   private val Primary = DateTimeFormatter.ofPattern("dd.MM.yyyy_HH:mm:ss")
-  // RFC-like format. Real data has both 'Fri,_12_Jun_...' and 'Tue,_2_Jun_...' —
-  // use 'd' (1-2 digits) instead of 'dd' to accept both.
   private val Rfc     = DateTimeFormatter.ofPattern("EEE,_d_MMM_yyyy_HH:mm:ss_Z", Locale.ENGLISH)
 
   def parse(s: String): Option[Instant] =

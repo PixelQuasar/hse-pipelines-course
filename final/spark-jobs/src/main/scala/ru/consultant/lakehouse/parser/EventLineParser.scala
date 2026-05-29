@@ -25,11 +25,8 @@ object EventLineParser {
   private val QsRx             = """^QS\s+(\S+)\s+\{(.*)\}\s*$""".r
   private val CardStartRx      = """^CARD_SEARCH_START\s+(\S+)\s*$""".r
   private val DocOpenRx        = """^DOC_OPEN\s+(\S+)\s+(\S+)\s+(\S+)\s*$""".r
-  // Some real-world DOC_OPEN lines come without a timestamp: "DOC_OPEN  <sid> <doc>".
-  // Two-or-more-spaces between DOC_OPEN and sid → ts position is empty.
   private val DocOpenNoTsRx    = """^DOC_OPEN\s+(\S+)\s+(\S+)\s*$""".r
   private val CardParamRx      = """^\$(\S+)\s+(.+)$""".r
-  // search_id may be negative (signed int overflow in source). Accept -?\d+.
   private val ResultsRx        = """^(-?\d+)((?:\s+\S+)*)\s*$""".r
   private val CardEndRx        = """^CARD_SEARCH_END$""".r
 

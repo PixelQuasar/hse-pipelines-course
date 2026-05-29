@@ -1,51 +1,10 @@
 ```mermaid
-flowchart TD
-    USER((User))
-
-    subgraph compute["Compute"]
-        GEN["generator (Rust)<br/>~10k sessions/hour<br/>non-uniform arrivals<br/>backdate 0..7d"]
-        SCH["scheduler (ofelia)<br/>parse @1m, cold-backfill @24h"]
-        SPARK["spark-job (Scala)<br/>ParseJob (incremental)"]
-        SCH -.->|docker exec spark-submit| SPARK
-    end
-
-    subgraph s3["MinIO (S3)"]
-        SES[("sessions/<br/>raw cp1251 txt")]
-        CHW[("ch-warehouse/<br/>CH MergeTree parts")]
-        PEX[("parquet-exports/<br/>open parquet")]
-    end
-
-    subgraph ch["ClickHouse 25.3"]
-        BRZ["bronze.events<br/>ReplacingMergeTree"]
-        WM["bronze.processed_files<br/>watermark"]
-        GOL["gold.*_daily<br/>Refreshable MV<br/>hot window = 10d"]
-        EXP["exports.* MV<br/>S3 engine"]
-    end
-
-    subgraph ui["UIs (host ports)"]
-        GRA["Grafana :8010"]
-        PLY["CH Play :8011"]
-        MCO["MinIO Console :8012"]
-    end
-
-    GEN -->|PUT| SES
-    SPARK -->|list| SES
-    SPARK -->|anti-join| WM
-    SPARK -->|JDBC insert| BRZ
-    SPARK -->|JDBC insert| WM
-    BRZ -->|FROM .. FINAL<br/>WHERE date >= today()-10| GOL
-    GOL --> EXP
-
-    BRZ -.->|disk = S3| CHW
-    GOL -.->|disk = S3| CHW
-    EXP -->|parquet snapshot| PEX
-
-    GRA -->|HTTP 8123| GOL
-    PLY -->|HTTP 8123| BRZ
-    USER --> GRA
-    USER --> PLY
-    USER --> MCO
-    MCO -.->|browse| s3
+flowchart LR
+    GEN[Generator] -->|PUT| S3[(MinIO S3)]
+    S3 -->|read| SPARK[Spark ParseJob<br/>Scala]
+    SPARK -->|JDBC| CH[(ClickHouse<br/>bronze → gold)]
+    CH --> GRAF[Grafana]
+    GRAF --> USER((User))
 ```
 
 ## Содержание
@@ -70,7 +29,7 @@ flowchart TD
 | **MinIO (S3)** | Сырые логи + физический disk для CH MergeTree + parquet snapshots |
 | **ClickHouse 25.3** | Универсальный storage + query engine. Bronze (raw events), gold (aggregates через Refreshable MV), exports (open parquet) |
 | **Spark 3.5 / Scala 2.12** | Только парсер логов в типизированные `RawEvent`. Никакой агрегации — её делает CH MV |
-| **Rust generator** | Синтетическая нагрузка для демо «живого» пайплайна |
+| **Generator** | Синтетическая нагрузка для демо «живого» пайплайна |
 | **ofelia scheduler** | Cron: `parse @every 1m`, `cold-backfill @every 24h` через `docker exec` |
 | **Grafana** | Дашборд с 11 панелями: метрики + распределения + heatmap'ы |
 
@@ -201,7 +160,7 @@ Hot window = 10 дней >= backdating range генератора (7 дней) +
 
 ## Генератор данных
 
-`generator/src/`, ~250 LOC Rust. Три модуля: `main.rs` (Poisson scheduler), `dist.rs` (snapshot распределений), `session.rs` (рендер сессии).
+`generator/src/`, ~250 LOC. Три модуля: `main.rs` (Poisson scheduler), `dist.rs` (snapshot распределений), `session.rs` (рендер сессии).
 
 ### Snapshot реальных распределений
 
@@ -300,7 +259,7 @@ Hot window = 10 дней >= backdating range генератора (7 дней) +
 ```bash
 cd final
 docker-compose up -d --build
-# первая сборка ~5-7 минут: maven build spark-jobs, rust build generator
+# первая сборка ~5-7 минут: spark-jobs (Maven) + generator
 # CH стартует через ~30 сек и применяет DDL из ./clickhouse/init/
 ```
 
@@ -438,7 +397,7 @@ final/
 ├── grafana/
 │   ├── provisioning/{datasources,dashboards}/  # provisioning yaml
 │   └── dashboards/lakehouse.json               # 22 панелей
-├── generator/                 # Rust generator (Cargo.toml + src/{main,dist,session}.rs)
+├── generator/                 # generator (src/{main,dist,session})
 └── spark-jobs/                # Scala application
     ├── pom.xml
     ├── Dockerfile             # multi-stage: maven build → apache/spark + CH JDBC
@@ -450,4 +409,4 @@ final/
         └── jobs/              # SparkApp, ParseJob
 ```
 
-CI/CD: `.github/workflows/ci-cd.yml` — 4 джоба (Scala build, Rust build, compose validate, deploy). Push в main → SSH-деплой на хост с одношотовым cold-backfill после старта.
+CI/CD: `.github/workflows/ci-cd.yml` — 4 джоба (Scala build, generator build, compose validate, deploy). Push в main → SSH-деплой на хост с одношотовым cold-backfill после старта.
