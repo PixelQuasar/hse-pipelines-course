@@ -1,5 +1,10 @@
 <clickhouse>
   <startup_scripts>
+    <!-- admin_sql — full-privileged SQL user; needed for tables that use named_collection
+         (XML-defined users like the one from CLICKHOUSE_USER env can't be granted SQL privileges).
+         Password is intentionally non-secret: this user only ever accepts connections from
+         inside the docker network (CH listens on lakehouse-net), and is read+used by
+         services that already have access to other secrets via .env. -->
     <scripts>
       <query>CREATE USER IF NOT EXISTS admin_sql IDENTIFIED WITH plaintext_password BY 'admin_sql_pw'</query>
     </scripts>
@@ -11,3 +16,5 @@
     </scripts>
   </startup_scripts>
 </clickhouse>
+
+

@@ -71,7 +71,6 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - ./clickhouse/config.d:/etc/clickhouse-server/config.d:ro
-      - ./clickhouse/users.d:/etc/clickhouse-server/users.d
       - ./clickhouse/init:/docker-entrypoint-initdb.d:ro
       - clickhouse-data:/var/lib/clickhouse
     depends_on:

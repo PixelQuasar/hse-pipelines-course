@@ -259,17 +259,43 @@ Hot window = 10 дней >= backdating range генератора (7 дней) +
 | Панель | Что показывает |
 |---|---|
 | **Топ-20 QS-запросов** | Текст запроса + частота |
-| **Сложность карточного поиска** | Bar chart: распределение по кол-ву `card_params` в одном CARD_SEARCH |
+| **Распределение событий на сессию** | Histogram bucket-ов длин сессий |
+| **Длительность сессии** | Histogram bucket-ов «< 1 мин» / «5-15 мин» / ... |
 | **Длина сессии за 24h** | avg/p50/p90/p99 событий на сессию |
-| **Активность: час × день недели** | Heatmap событий по `toHour × toDayOfWeek` за последние 7 дней |
+| **Поведенческий профиль сессий** | Donut: «QS + CARD / только QS / только CARD / только просмотр» |
+| **Открытий документов на сессию** | Histogram bounce rate vs engaged sessions |
+| **Активность: час × день недели** | 7×24 grid с colored cells, ивенты по `toHour × toDayOfWeek` |
+| **Новые сессии в минуту (live — Poisson)** | Timeseries последнего часа — видны волны Poisson-модуляции |
+
+### Spark observability
+
+| Панель | Что показывает |
+|---|---|
+| **Watermark: всего обработано файлов** | Растущий counter `bronze.processed_files` |
+| **ParseJob throughput за час** | Дельта watermark за последний час (~10k/час совпадает с темпом генератора) |
+| **Время с последнего ParseJob** | `now() - max(processed_at)` с порогами health |
+| **Parquet snapshot bronze (last partition date)** | Дата последней записанной partition в `s3://parquet-exports/bronze/` |
+| **Parquet файлов в S3: bronze / card_hits / qs_opens** | `count(DISTINCT _file) FROM s3(minio_s3, ...)` — кол-во parquet-партов |
 
 ### UI URLs
 
+**Prod** (demo инстанс на `quasarity.com`):
+
+| URL | Что | Креды |
+|---|---|---|
+| <http://demo-1.quasarity.com> | Grafana | anonymous Admin (без логина) |
+| <http://demo-2.quasarity.com/play> | ClickHouse Play | `quasarity` / `mini44991231222` (read-only пользователь) |
+| <http://demo-3.quasarity.com> | MinIO Console — обзор бакетов | `quasarity` / `mini44991231222` |
+
+**Локально** (`docker-compose up` на своей машине):
+
 | URL | Что |
 |---|---|
-| `http://<host>:8010` | Grafana (admin creds = `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD`) |
-| `http://<host>:8011/play` | ClickHouse Play — встроенный SQL editor |
-| `http://<host>:8012` | MinIO Console — браузер бакетов |
+| <http://localhost:8010> | Grafana |
+| <http://localhost:8011/play> | ClickHouse Play |
+| <http://localhost:8012> | MinIO Console |
+
+Креды для локального запуска берутся из `.env` (по умолчанию `admin` / `admin12345`).
 
 ---
 
@@ -291,9 +317,11 @@ docker-compose up -d --build
 Через ~2 минуты bronze наполнен ~135k событий из 10k seed-файлов, MV пересчитала hot-партиции. Чтобы исторические дате попали в `gold.*` сразу (а не через сутки от scheduler'а):
 
 ```bash
-docker compose exec -T clickhouse clickhouse-client --user admin --password admin12345 --query "INSERT INTO gold.card_search_doc_hits_daily SELECT event_date AS date, JSONExtractString(arrayJoin(JSONExtractArrayRaw(result_doc_ids_json))) AS doc_id, count() AS hits, now() AS computed_at FROM bronze.events FINAL WHERE event_type = 'CARD_SEARCH' AND event_date IS NOT NULL AND event_date < today() - 10 GROUP BY date, doc_id"
+CH="docker compose exec -T clickhouse clickhouse-client --user <user> --password <pw>"
 
-docker compose exec -T clickhouse clickhouse-client --user admin --password admin12345 --query "INSERT INTO gold.qs_doc_opens_daily SELECT event_date AS open_date, doc_id, count() AS opens, now() AS computed_at FROM bronze.events FINAL WHERE event_type = 'DOC_OPEN' AND search_kind = 'QS' AND doc_id IS NOT NULL AND event_date IS NOT NULL AND event_date < today() - 10 GROUP BY event_date, doc_id"
+$CH --query "INSERT INTO gold.card_search_doc_hits_daily SELECT event_date AS date, JSONExtractString(arrayJoin(JSONExtractArrayRaw(result_doc_ids_json))) AS doc_id, count() AS hits, now() AS computed_at FROM bronze.events FINAL WHERE event_type = 'CARD_SEARCH' AND event_date IS NOT NULL AND event_date < today() - 10 GROUP BY date, doc_id"
+
+$CH --query "INSERT INTO gold.qs_doc_opens_daily SELECT event_date AS open_date, doc_id, count() AS opens, now() AS computed_at FROM bronze.events FINAL WHERE event_type = 'DOC_OPEN' AND search_kind = 'QS' AND doc_id IS NOT NULL AND event_date IS NOT NULL AND event_date < today() - 10 GROUP BY event_date, doc_id"
 ```
 
 В CI/CD workflow этот step есть автоматически после деплоя.
@@ -326,7 +354,7 @@ LIMIT 50
 Полный экспорт в CSV:
 
 ```bash
-docker compose exec clickhouse clickhouse-client --user admin --password admin12345 --query "
+docker compose exec clickhouse clickhouse-client --user <user> --password <pw> --query "
   SELECT open_date, doc_id, opens FROM gold.qs_doc_opens_daily FINAL 
   WHERE open_date <= '2026-05-28' ORDER BY open_date, opens DESC FORMAT CSV
 " > metric2.csv
@@ -349,6 +377,23 @@ docker compose exec clickhouse clickhouse-client --user admin --password admin12
 
 ---
 
+## ClickHouse RBAC quirks
+
+В compose есть **два user'а** ClickHouse — потому что один не может всё:
+
+| User | Создаётся через | Может |
+|---|---|---|
+| `quasarity` | XML (entrypoint из `CLICKHOUSE_USER` env) | ALL grants + ACCESS_MANAGEMENT, но **не** USE NAMED COLLECTION (XML-users read-only для SQL grant'ов) |
+| `admin_sql` | SQL (`config.d/startup_scripts.xml`) | ALL + NAMED COLLECTION ADMIN (SQL-storage, grant работает) |
+
+`admin_sql` нужен для:
+1. **CREATE TABLE на S3 engine с named_collection** — `exports.*_parquet` таблицы
+2. **Grafana SELECT через `s3()` table function** — чтение parquet-файлов из MinIO
+
+Креды `admin_sql` хардкодом в `clickhouse/config.d/startup_scripts.xml` (это не secret, юзер ходит только внутри docker network).
+
+Named collection `minio_s3` определена в `clickhouse/config.d/named_collections.xml` с `<from_env="MINIO_ROOT_USER">` — кред подсасывается из env контейнера, не хардкодится в DDL.
+
 ## Известные ограничения
 
 Честный список, что не сделано:
@@ -361,6 +406,8 @@ docker compose exec clickhouse clickhouse-client --user admin --password admin12
 - **CH JDBC driver `0.4.6-all`** — последняя версия с реально self-contained `-all` jar. 0.6.x разбил classifier → `NoClassDefFoundError`. См. `spark-jobs/Dockerfile`.
 - **Spark JDBC не умеет CH Array** — workaround через JSON-сериализацию (`card_params_json`, `result_doc_ids_json`), парсинг обратно в MV через `JSONExtractArrayRaw`.
 - **CH listen_host** — по умолчанию `127.0.0.1`, другие контейнеры не подключаются. `clickhouse/config.d/listen.xml` ставит `0.0.0.0`.
+- **Partitioned S3 engine write-only** — `SELECT FROM exports.*_parquet` падает с `NOT_IMPLEMENTED`. Поэтому panel'ы для подсчёта parquet-файлов используют `FROM s3(minio_s3, ...)` table function вместо engine таблицы.
+- **Bucket `warehouse/`** создаётся `mc-init`, но не используется — leftover из старого Iceberg-плана. Безвредно.
 
 ---
 
@@ -384,13 +431,17 @@ final/
 ├── data/                      # 10k seed файлов (сдвинутые таймстемпы до 2026-05-28)
 ├── docs/superpowers/{specs,plans}/   # дизайн + план (УСТАРЕЛИ, описывают Iceberg)
 ├── clickhouse/
-│   ├── config.d/storage.xml   # S3 disk через from_env
-│   ├── config.d/listen.xml    # listen_host = 0.0.0.0
-│   └── init/01_schemas.sql    # bronze + bronze.processed_files + gold + exports + MV
+│   ├── config.d/
+│   │   ├── storage.xml                # S3 disk через from_env (для CH MergeTree)
+│   │   ├── listen.xml                 # listen_host = 0.0.0.0
+│   │   ├── named_collections.xml      # minio_s3 named collection (from_env)
+│   │   └── startup_scripts.xml        # creates admin_sql user + grants NAMED COLLECTION
+│   ├── users.d/                       # mount RW (entrypoint пишет default-user.xml)
+│   └── init/01_schemas.sql            # bronze + processed_files + gold + exports + MVs
 ├── scheduler/config.ini       # ofelia: parse @1m, cold-backfill @24h
 ├── grafana/
 │   ├── provisioning/{datasources,dashboards}/  # provisioning yaml
-│   └── dashboards/lakehouse.json               # 11 панелей
+│   └── dashboards/lakehouse.json               # 22 панелей
 ├── generator/                 # Rust generator (Cargo.toml + src/{main,dist,session}.rs)
 └── spark-jobs/                # Scala application
     ├── pom.xml
