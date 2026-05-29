@@ -122,7 +122,7 @@ docker-compose exec clickhouse clickhouse-client --user admin --password admin12
 SELECT sum(hits) AS total
 FROM gold.card_search_doc_hits_daily
 WHERE doc_id = 'ACC_45616'
-  AND date < '2026-01-01'    -- фильтр исторических данных (отсекает синтетику от генератора)
+  AND date <= '2026-05-28'    -- фильтр исторических данных (отсекает синтетику от генератора)
 "
 ```
 
@@ -134,7 +134,7 @@ WHERE doc_id = 'ACC_45616'
 docker-compose exec clickhouse clickhouse-client --user admin --password admin12345 --query "
 SELECT open_date, doc_id, opens
 FROM gold.qs_doc_opens_daily
-WHERE open_date < '2026-01-01'
+WHERE open_date <= '2026-05-28'
 ORDER BY opens DESC
 LIMIT 50
 "
@@ -146,7 +146,7 @@ LIMIT 50
 docker-compose exec clickhouse clickhouse-client --user admin --password admin12345 --query "
 SELECT open_date, doc_id, opens
 FROM gold.qs_doc_opens_daily
-WHERE open_date < '2026-01-01'
+WHERE open_date <= '2026-05-28'
 ORDER BY open_date, opens DESC
 FORMAT CSV
 " > metric2.csv

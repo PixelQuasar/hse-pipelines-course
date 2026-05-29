@@ -24,7 +24,7 @@
           "refId": "A",
           "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
           "editorType": "sql",
-          "rawSql": "SELECT sum(hits) AS hits FROM gold.card_search_doc_hits_daily WHERE doc_id = 'ACC_45616' AND date < '2026-01-01'",
+          "rawSql": "SELECT sum(hits) AS hits FROM gold.card_search_doc_hits_daily WHERE doc_id = 'ACC_45616' AND date <= '2026-05-28'",
           "format": 0,
           "queryType": "table"
         }
@@ -138,7 +138,7 @@
           "refId": "A",
           "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
           "editorType": "sql",
-          "rawSql": "SELECT open_date, doc_id, opens FROM gold.qs_doc_opens_daily WHERE open_date < '2026-01-01' ORDER BY opens DESC LIMIT 20",
+          "rawSql": "SELECT open_date, doc_id, opens FROM gold.qs_doc_opens_daily WHERE open_date <= '2026-05-28' ORDER BY opens DESC LIMIT 20",
           "format": 1,
           "queryType": "table"
         }
@@ -182,7 +182,7 @@
           "refId": "A",
           "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
           "editorType": "sql",
-          "rawSql": "WITH top3 AS (SELECT doc_id FROM gold.qs_doc_opens_daily WHERE open_date < '2026-01-01' GROUP BY doc_id ORDER BY sum(opens) DESC LIMIT 3) SELECT toDateTime(open_date) AS t, doc_id, opens FROM gold.qs_doc_opens_daily WHERE doc_id IN (SELECT doc_id FROM top3) AND open_date < '2026-01-01' ORDER BY open_date, doc_id",
+          "rawSql": "WITH top3 AS (SELECT doc_id FROM gold.qs_doc_opens_daily WHERE open_date <= '2026-05-28' GROUP BY doc_id ORDER BY sum(opens) DESC LIMIT 3) SELECT toDateTime(open_date) AS t, doc_id, opens FROM gold.qs_doc_opens_daily WHERE doc_id IN (SELECT doc_id FROM top3) AND open_date <= '2026-05-28' ORDER BY open_date, doc_id",
           "format": 1,
           "queryType": "timeseries"
         }
