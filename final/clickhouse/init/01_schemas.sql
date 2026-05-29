@@ -143,10 +143,9 @@ CREATE TABLE IF NOT EXISTS exports.bronze_events_parquet
   parse_error      Nullable(String),
   raw_line         Nullable(String)
 )
-ENGINE = S3(
-  'http://minio:9000/parquet-exports/bronze/events-{_partition_id}.parquet',
-  'admin', 'admin12345',
-  'Parquet'
+ENGINE = S3(minio_s3,
+  url = 'http://minio:9000/parquet-exports/bronze/events-{_partition_id}.parquet',
+  format = 'Parquet'
 )
 PARTITION BY toYYYYMMDD(coalesce(event_date, toDate('1970-01-01')));
 
@@ -167,10 +166,9 @@ CREATE TABLE IF NOT EXISTS exports.card_search_doc_hits_daily_parquet
   hits         UInt64,
   computed_at  DateTime
 )
-ENGINE = S3(
-  'http://minio:9000/parquet-exports/gold/card-hits-{_partition_id}.parquet',
-  'admin', 'admin12345',
-  'Parquet'
+ENGINE = S3(minio_s3,
+  url = 'http://minio:9000/parquet-exports/gold/card-hits-{_partition_id}.parquet',
+  format = 'Parquet'
 )
 PARTITION BY toYYYYMM(date);
 
@@ -186,10 +184,9 @@ CREATE TABLE IF NOT EXISTS exports.qs_doc_opens_daily_parquet
   opens        UInt64,
   computed_at  DateTime
 )
-ENGINE = S3(
-  'http://minio:9000/parquet-exports/gold/qs-opens-{_partition_id}.parquet',
-  'admin', 'admin12345',
-  'Parquet'
+ENGINE = S3(minio_s3,
+  url = 'http://minio:9000/parquet-exports/gold/qs-opens-{_partition_id}.parquet',
+  format = 'Parquet'
 )
 PARTITION BY toYYYYMM(open_date);
 

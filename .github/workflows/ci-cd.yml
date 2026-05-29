@@ -157,25 +157,25 @@ jobs:
           ssh "$DEPLOY_USER@$DEPLOY_HOST" bash -s <<EOF
             set -e
             cd "$DEPLOY_PATH"
-            echo "waiting 120s for first ParseJob tick to populate bronze.events..."
-            sleep 120
-            docker compose exec -T clickhouse \
-              clickhouse-client --user "$MINIO_ROOT_USER" --password "$MINIO_ROOT_PASSWORD" --multiquery --query "
-                INSERT INTO gold.card_search_doc_hits_daily
-                SELECT event_date AS date,
-                       JSONExtractString(arrayJoin(JSONExtractArrayRaw(result_doc_ids_json))) AS doc_id,
-                       count() AS hits, now() AS computed_at
-                FROM bronze.events FINAL
-                WHERE event_type = 'CARD_SEARCH' AND event_date IS NOT NULL AND event_date < today() - 10
-                GROUP BY date, doc_id;
 
-                INSERT INTO gold.qs_doc_opens_daily
-                SELECT event_date AS open_date, doc_id,
-                       count() AS opens, now() AS computed_at
-                FROM bronze.events FINAL
-                WHERE event_type = 'DOC_OPEN' AND search_kind = 'QS' AND doc_id IS NOT NULL
-                  AND event_date IS NOT NULL AND event_date < today() - 10
-                GROUP BY event_date, doc_id;
-              "
+            CH="docker compose exec -T clickhouse clickhouse-client --user $MINIO_ROOT_USER --password $MINIO_ROOT_PASSWORD"
+
+            echo "waiting 180s for first ParseJob tick to populate bronze.events..."
+            sleep 180
+
+            echo "--- bronze state (cold dates) ---"
+            \$CH --query "SELECT count() AS cold_card_search_events FROM bronze.events FINAL WHERE event_type='CARD_SEARCH' AND event_date IS NOT NULL AND event_date < today() - 10"
+            \$CH --query "SELECT count() AS cold_doc_open_events FROM bronze.events FINAL WHERE event_type='DOC_OPEN' AND search_kind='QS' AND event_date IS NOT NULL AND event_date < today() - 10"
+
+            echo "--- inserting cold partitions into gold.card_search_doc_hits_daily ---"
+            \$CH --query "INSERT INTO gold.card_search_doc_hits_daily SELECT event_date AS date, JSONExtractString(arrayJoin(JSONExtractArrayRaw(result_doc_ids_json))) AS doc_id, count() AS hits, now() AS computed_at FROM bronze.events FINAL WHERE event_type = 'CARD_SEARCH' AND event_date IS NOT NULL AND event_date < today() - 10 GROUP BY date, doc_id"
+
+            echo "--- inserting cold partitions into gold.qs_doc_opens_daily ---"
+            \$CH --query "INSERT INTO gold.qs_doc_opens_daily SELECT event_date AS open_date, doc_id, count() AS opens, now() AS computed_at FROM bronze.events FINAL WHERE event_type = 'DOC_OPEN' AND search_kind = 'QS' AND doc_id IS NOT NULL AND event_date IS NOT NULL AND event_date < today() - 10 GROUP BY event_date, doc_id"
+
+            echo "--- gold state after backfill ---"
+            \$CH --query "SELECT 'card_hits' AS t, count() AS rows, sum(hits) AS total_hits_acc FROM gold.card_search_doc_hits_daily FINAL WHERE doc_id='ACC_45616' AND date < today() - 10"
+            \$CH --query "SELECT 'qs_opens' AS t, count() AS rows, countDistinct(doc_id) AS distinct_docs FROM gold.qs_doc_opens_daily FINAL WHERE open_date < today() - 10"
+
             echo "cold-backfill done"
           EOF
