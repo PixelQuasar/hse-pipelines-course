@@ -9,8 +9,8 @@ datasources:
       host: clickhouse
       port: 8123
       protocol: http
-      username: admin
+      username: $CLICKHOUSE_USER
       defaultDatabase: gold
     secureJsonData:
-      password: admin12345
-    editable: true
+      password: $CLICKHOUSE_PASSWORD
+    editable: false
