@@ -116,7 +116,7 @@
           "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
           "editorType": "sql",
           "rawSql": "SELECT event_type, count() AS cnt FROM bronze.events FINAL GROUP BY event_type ORDER BY cnt DESC",
-          "format": 0,
+          "format": 1,
           "queryType": "table"
         }
       ],
@@ -124,7 +124,7 @@
         "pieType": "donut",
         "tooltip": {"mode": "single"},
         "legend": {"showLegend": true, "displayMode": "list", "placement": "right", "values": ["value", "percent"]},
-        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "/^cnt$/", "values": false}
+        "reduceOptions": {"calcs": [], "fields": "/^cnt$/", "values": true}
       }
     },
     {
