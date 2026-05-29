@@ -71,6 +71,7 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - ./clickhouse/config.d:/etc/clickhouse-server/config.d:ro
+      - ./clickhouse/users.d:/etc/clickhouse-server/users.d
       - ./clickhouse/init:/docker-entrypoint-initdb.d:ro
       - clickhouse-data:/var/lib/clickhouse
     depends_on:
@@ -139,8 +140,8 @@ services:
       GF_AUTH_DISABLE_LOGIN_FORM: "true"
       GF_SECURITY_ADMIN_USER: ${MINIO_ROOT_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${MINIO_ROOT_PASSWORD}
-      CLICKHOUSE_USER: ${MINIO_ROOT_USER}
-      CLICKHOUSE_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      CLICKHOUSE_USER: admin_sql
+      CLICKHOUSE_PASSWORD: admin_sql_pw
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro

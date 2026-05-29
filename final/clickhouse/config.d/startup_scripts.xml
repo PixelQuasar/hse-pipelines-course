@@ -1,0 +1,13 @@
+<clickhouse>
+  <startup_scripts>
+    <scripts>
+      <query>CREATE USER IF NOT EXISTS admin_sql IDENTIFIED WITH plaintext_password BY 'admin_sql_pw'</query>
+    </scripts>
+    <scripts>
+      <query>GRANT ALL ON *.* TO admin_sql WITH GRANT OPTION</query>
+    </scripts>
+    <scripts>
+      <query>GRANT NAMED COLLECTION ADMIN ON *.* TO admin_sql WITH GRANT OPTION</query>
+    </scripts>
+  </startup_scripts>
+</clickhouse>

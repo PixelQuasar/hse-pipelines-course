@@ -531,7 +531,7 @@
           "refId": "A",
           "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
           "editorType": "sql",
-          "rawSql": "SELECT toString(max(event_date)) AS last_date FROM exports.bronze_events_parquet",
+          "rawSql": "SELECT toString(max(event_date)) AS last_date FROM s3(minio_s3, url='http://minio:9000/parquet-exports/bronze/*.parquet', format='Parquet')",
           "format": 1,
           "queryType": "table"
         }
@@ -561,7 +561,7 @@
           "refId": "A",
           "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
           "editorType": "sql",
-          "rawSql": "SELECT count(DISTINCT _file) AS files FROM exports.bronze_events_parquet",
+          "rawSql": "SELECT count(DISTINCT _file) AS files FROM s3(minio_s3, url='http://minio:9000/parquet-exports/bronze/*.parquet', format='Parquet')",
           "format": 1,
           "queryType": "table"
         }
@@ -591,7 +591,7 @@
           "refId": "A",
           "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
           "editorType": "sql",
-          "rawSql": "SELECT count(DISTINCT _file) AS files FROM exports.card_search_doc_hits_daily_parquet",
+          "rawSql": "SELECT count(DISTINCT _file) AS files FROM s3(minio_s3, url='http://minio:9000/parquet-exports/gold/card-hits-*.parquet', format='Parquet')",
           "format": 1,
           "queryType": "table"
         }
@@ -621,7 +621,7 @@
           "refId": "A",
           "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
           "editorType": "sql",
-          "rawSql": "SELECT count(DISTINCT _file) AS files FROM exports.qs_doc_opens_daily_parquet",
+          "rawSql": "SELECT count(DISTINCT _file) AS files FROM s3(minio_s3, url='http://minio:9000/parquet-exports/gold/qs-opens-*.parquet', format='Parquet')",
           "format": 1,
           "queryType": "table"
         }
