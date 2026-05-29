@@ -16,7 +16,7 @@
     {
       "id": 1,
       "type": "stat",
-      "title": "Метрика 1: ACC_45616 в результатах карточного поиска (исторические данные)",
+      "title": "Метрика 1: ACC_45616 в результатах карточного поиска",
       "gridPos": {"x": 0, "y": 0, "w": 12, "h": 5},
       "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
       "targets": [
@@ -24,7 +24,7 @@
           "refId": "A",
           "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
           "editorType": "sql",
-          "rawSql": "SELECT sum(hits) AS hits FROM gold.card_search_doc_hits_daily WHERE doc_id = 'ACC_45616' AND date <= '2026-05-28'",
+          "rawSql": "SELECT sum(hits) AS hits FROM gold.card_search_doc_hits_daily FINAL WHERE doc_id = 'ACC_45616'",
           "format": 0,
           "queryType": "table"
         }
@@ -130,7 +130,7 @@
     {
       "id": 5,
       "type": "table",
-      "title": "Метрика 2: топ-20 документов по открытиям через QS (исторические)",
+      "title": "Метрика 2: топ-20 документов по открытиям через QS",
       "gridPos": {"x": 12, "y": 5, "w": 12, "h": 8},
       "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
       "targets": [
@@ -138,7 +138,7 @@
           "refId": "A",
           "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
           "editorType": "sql",
-          "rawSql": "SELECT open_date, doc_id, opens FROM gold.qs_doc_opens_daily WHERE open_date <= '2026-05-28' ORDER BY opens DESC LIMIT 20",
+          "rawSql": "SELECT open_date, doc_id, opens FROM gold.qs_doc_opens_daily FINAL ORDER BY opens DESC LIMIT 20",
           "format": 1,
           "queryType": "table"
         }
