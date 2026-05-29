@@ -194,6 +194,109 @@
         }
       },
       "options": {"legend": {"showLegend": true, "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+    },
+    {
+      "id": 8,
+      "type": "table",
+      "title": "Топ-20 QS-запросов",
+      "gridPos": {"x": 0, "y": 29, "w": 12, "h": 8},
+      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+          "editorType": "sql",
+          "rawSql": "SELECT query_text AS query, count() AS searches FROM bronze.events FINAL WHERE event_type = 'QS' AND query_text IS NOT NULL GROUP BY query_text ORDER BY searches DESC LIMIT 20",
+          "format": 1,
+          "queryType": "table"
+        }
+      ],
+      "fieldConfig": {"defaults": {"custom": {"align": "auto"}}}
+    },
+    {
+      "id": 9,
+      "type": "barchart",
+      "title": "Сложность карточного поиска (кол-во параметров)",
+      "gridPos": {"x": 12, "y": 29, "w": 12, "h": 8},
+      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+          "editorType": "sql",
+          "rawSql": "SELECT toString(length(JSONExtractArrayRaw(card_params_json))) AS n_params, count() AS searches FROM bronze.events FINAL WHERE event_type = 'CARD_SEARCH' GROUP BY n_params ORDER BY toUInt32(n_params)",
+          "format": 1,
+          "queryType": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"axisLabel": "сессий", "fillOpacity": 80, "lineWidth": 1}
+        }
+      },
+      "options": {
+        "xField": "n_params",
+        "orientation": "vertical",
+        "showValue": "auto",
+        "legend": {"showLegend": false},
+        "tooltip": {"mode": "single"}
+      }
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Длина сессии за последние 24h",
+      "gridPos": {"x": 0, "y": 37, "w": 12, "h": 8},
+      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+          "editorType": "sql",
+          "rawSql": "SELECT round(avg(n), 1) AS avg, quantile(0.5)(n) AS p50, quantile(0.9)(n) AS p90, quantile(0.99)(n) AS p99 FROM (SELECT session_id, count() AS n FROM bronze.events FINAL WHERE event_time >= now() - INTERVAL 24 HOUR GROUP BY session_id)",
+          "format": 1,
+          "queryType": "table"
+        }
+      ],
+      "options": {
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"steps": [{"color": "orange", "value": null}]},
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "heatmap",
+      "title": "Активность: час × день недели (последние 7 дней)",
+      "gridPos": {"x": 12, "y": 37, "w": 12, "h": 8},
+      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+          "editorType": "sql",
+          "rawSql": "SELECT toStartOfHour(event_time) AS t, toString(toDayOfWeek(event_time)) AS dow, count() AS events FROM bronze.events FINAL WHERE event_type='SESSION_START' AND event_time >= now() - INTERVAL 7 DAY GROUP BY t, dow ORDER BY t, dow",
+          "format": 1,
+          "queryType": "table"
+        }
+      ],
+      "options": {
+        "calculate": false,
+        "yAxis": {"axisPlacement": "left", "reverse": false},
+        "color": {"mode": "scheme", "scheme": "Spectral", "exponent": 0.5, "steps": 64},
+        "cellGap": 1,
+        "tooltip": {"show": true, "yHistogram": false}
+      }
     }
   ]
 }
