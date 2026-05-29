@@ -92,7 +92,8 @@ fn render_session(d: &Distributions) -> String {
     let weights: Vec<f64> = kinds.iter().map(|k| *d.event_kinds.get(*k).unwrap()).collect();
     let kind_dist = WeightedIndex::new(&weights).expect("event_kinds is empty");
 
-    let mut t = Utc::now();
+    let backdate_secs = rng.gen_range(0..7 * 24 * 3600);
+    let mut t = Utc::now() - Duration::seconds(backdate_secs);
     let mut out = String::new();
     out.push_str(&format!("SESSION_START {}\n", fmt_ts(t)));
 

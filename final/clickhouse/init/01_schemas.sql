@@ -34,6 +34,21 @@ PARTITION BY toYYYYMM(coalesce(event_date, toDate('1970-01-01')))
 ORDER BY (session_id, event_seq)
 SETTINGS storage_policy = 's3_main', index_granularity = 8192;
 
+-- ===== bronze.processed_files (watermark) =====
+-- ParseJob reads this table to skip already-ingested files.
+-- ReplacingMergeTree by path = a single source of truth even if
+-- a race inserts the same path twice.
+CREATE TABLE IF NOT EXISTS bronze.processed_files
+(
+  path          String,
+  processed_at  DateTime DEFAULT now(),
+  events_count  UInt32   DEFAULT 0
+)
+ENGINE = ReplacingMergeTree(processed_at)
+PARTITION BY toYYYYMM(processed_at)
+ORDER BY path
+SETTINGS storage_policy = 's3_main';
+
 -- ===== gold tables (targets for Refreshable MVs) =====
 
 CREATE TABLE IF NOT EXISTS gold.card_search_doc_hits_daily
@@ -65,20 +80,25 @@ SETTINGS storage_policy = 's3_main';
 -- ReplacingMergeTree dedups by computed_at, so each refresh effectively
 -- overwrites the previous run for affected keys.
 
+-- Hot window = 10 days. Generator backdates SESSION_START up to 7 days,
+-- so 10d gives a safe margin for late ingest + day-boundary edge cases.
+-- Older partitions stay "frozen" in gold (never re-inserted), values held
+-- by ReplacingMergeTree from the last in-window computation.
+--
+-- Bootstrap of historical (cold) data happens via a one-shot INSERT below.
+
 CREATE MATERIALIZED VIEW IF NOT EXISTS gold.card_search_doc_hits_daily_mv
 REFRESH EVERY 1 MINUTE
 TO gold.card_search_doc_hits_daily AS
 SELECT
   event_date AS date,
-  -- result_doc_ids_json is a JSON array like ["doc1","doc2",...]; parse and explode
   JSONExtractString(arrayJoin(JSONExtractArrayRaw(result_doc_ids_json))) AS doc_id,
   count() AS hits,
   now() AS computed_at
--- FINAL forces ReplacingMergeTree dedup at read-time, so duplicates from
--- repeated ParseJob runs don't double-count in the aggregation.
 FROM bronze.events FINAL
 WHERE event_type = 'CARD_SEARCH'
   AND event_date IS NOT NULL
+  AND event_date >= today() - 10
 GROUP BY date, doc_id;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS gold.qs_doc_opens_daily_mv
@@ -94,7 +114,12 @@ WHERE event_type = 'DOC_OPEN'
   AND search_kind = 'QS'
   AND doc_id IS NOT NULL
   AND event_date IS NOT NULL
+  AND event_date >= today() - 10
 GROUP BY event_date, doc_id;
+
+-- Cold partitions (event_date < today() - 10) are backfilled by a daily
+-- scheduler job (see scheduler/config.ini → cold-backfill) — not here,
+-- because at schema-init time bronze.events is still empty.
 
 -- =====================================================================
 -- Parquet exports: scheduled CH-side dump of CH-native tables into open

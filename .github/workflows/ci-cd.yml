@@ -151,3 +151,31 @@ jobs:
             docker compose logs clickhouse | tail -50
             exit 1
           EOF
+
+      - name: cold-backfill one-shot (wait for first ParseJob, then aggregate cold partitions)
+        run: |
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" bash -s <<EOF
+            set -e
+            cd "$DEPLOY_PATH"
+            echo "waiting 120s for first ParseJob tick to populate bronze.events..."
+            sleep 120
+            docker compose exec -T clickhouse \
+              clickhouse-client --user "$MINIO_ROOT_USER" --password "$MINIO_ROOT_PASSWORD" --multiquery --query "
+                INSERT INTO gold.card_search_doc_hits_daily
+                SELECT event_date AS date,
+                       JSONExtractString(arrayJoin(JSONExtractArrayRaw(result_doc_ids_json))) AS doc_id,
+                       count() AS hits, now() AS computed_at
+                FROM bronze.events FINAL
+                WHERE event_type = 'CARD_SEARCH' AND event_date IS NOT NULL AND event_date < today() - 10
+                GROUP BY date, doc_id;
+
+                INSERT INTO gold.qs_doc_opens_daily
+                SELECT event_date AS open_date, doc_id,
+                       count() AS opens, now() AS computed_at
+                FROM bronze.events FINAL
+                WHERE event_type = 'DOC_OPEN' AND search_kind = 'QS' AND doc_id IS NOT NULL
+                  AND event_date IS NOT NULL AND event_date < today() - 10
+                GROUP BY event_date, doc_id;
+              "
+            echo "cold-backfill done"
+          EOF
