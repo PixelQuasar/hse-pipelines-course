@@ -36,10 +36,12 @@ object ParseJob {
     val processedBC  = spark.sparkContext.broadcast(processedSet)
     println(s"[ParseJob] watermark: ${processedSet.size} files already ingested")
 
-    val all    = spark.sparkContext.binaryFiles(SessionsPrefix)
-    val newRdd = all.filter { case (p, _) => !processedBC.value.contains(p) }.cache()
+    val all      = spark.sparkContext.binaryFiles(SessionsPrefix)
+    val newRddRaw = all.filter { case (p, _) => !processedBC.value.contains(p) }
+    val MaxFilesPerRun = sys.env.getOrElse("MAX_FILES_PER_RUN", "5000").toInt
+    val newRdd = newRddRaw.zipWithIndex().filter(_._2 < MaxFilesPerRun).map(_._1).cache()
     val newCount = newRdd.count()
-    println(s"[ParseJob] discovered ${newCount} new files")
+    println(s"[ParseJob] processing $newCount new files this run (cap = $MaxFilesPerRun)")
 
     if (newCount == 0) {
       println("[ParseJob] no new files; exiting")

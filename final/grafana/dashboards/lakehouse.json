@@ -403,7 +403,7 @@
     {
       "id": 15,
       "type": "timeseries",
-      "title": "Новые сессии в минуту (по ingest, последние 6 часов)",
+      "title": "Новые сессии в минуту, последние 3 часа",
       "gridPos": {"x": 0, "y": 61, "w": 24, "h": 8},
       "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
       "targets": [
@@ -411,7 +411,7 @@
           "refId": "A",
           "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
           "editorType": "sql",
-          "rawSql": "SELECT toStartOfMinute(ingested_at) AS t, count() AS new_sessions FROM bronze.events FINAL WHERE event_type = 'SESSION_START' AND ingested_at >= now() - INTERVAL 6 HOUR GROUP BY t ORDER BY t",
+          "rawSql": "SELECT toStartOfMinute(ingested_at) AS t, count() AS new_sessions FROM bronze.events FINAL WHERE event_type = 'SESSION_START' AND ingested_at >= now() - INTERVAL 3 HOUR GROUP BY t ORDER BY t",
           "format": 1,
           "queryType": "timeseries"
         }
