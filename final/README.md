@@ -1,7 +1,3 @@
-# Spark + ClickHouse + S3 — финальный проект
-
-Полностью контейнеризованный лейкхаус-пайплайн аналитики пользовательских сессий КонсультантПлюс. Раз в минуту парсер на Scala/Spark разбирает сырые логи из MinIO в типизированные события ClickHouse, Refreshable Materialized Views в CH считают целевые метрики, Grafana визуализирует, GitHub Actions деплоит push'ем в main.
-
 ```mermaid
 flowchart TD
     USER((User))

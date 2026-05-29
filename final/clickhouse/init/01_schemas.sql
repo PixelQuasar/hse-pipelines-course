@@ -88,7 +88,7 @@ SETTINGS storage_policy = 's3_main';
 -- Bootstrap of historical (cold) data happens via a one-shot INSERT below.
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS gold.card_search_doc_hits_daily_mv
-REFRESH EVERY 1 MINUTE
+REFRESH EVERY 1 MINUTE APPEND
 TO gold.card_search_doc_hits_daily AS
 SELECT
   event_date AS date,
@@ -102,7 +102,7 @@ WHERE event_type = 'CARD_SEARCH'
 GROUP BY date, doc_id;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS gold.qs_doc_opens_daily_mv
-REFRESH EVERY 1 MINUTE
+REFRESH EVERY 1 MINUTE APPEND
 TO gold.qs_doc_opens_daily AS
 SELECT
   event_date AS open_date,
