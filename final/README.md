@@ -1,28 +1,15 @@
 # Spark + ClickHouse + S3 — финальный проект
 
-Полностью контейнеризованный pipeline аналитики сессий КонсультантПлюс.
-
-- **Spark + Scala** парсит сырые логи и пишет в **ClickHouse** через JDBC
-- **ClickHouse** хранит bronze/gold MergeTree-таблицы **физически на S3** (через S3 storage disk)
-- **Refreshable Materialized Views** в CH считают целевые метрики автоматически — AggregateJob не нужен
-- **Parquet exports** дублируют bronze/gold в открытом формате на S3 (escape-hatch от vendor lock)
-- **Rust-генератор** подсыпает синтетические сессии в реальном времени
-- **ofelia** запускает ParseJob каждую минуту
-- Никаких сервисов на хосте — всё в `docker-compose`
-
-Дизайн: [`docs/superpowers/specs/2026-05-23-spark-lakehouse-design.md`](docs/superpowers/specs/2026-05-23-spark-lakehouse-design.md)
-План: [`docs/superpowers/plans/2026-05-23-spark-lakehouse-pipeline.md`](docs/superpowers/plans/2026-05-23-spark-lakehouse-pipeline.md)
-
-## Архитектура
+Полностью контейнеризованный лейкхаус-пайплайн аналитики пользовательских сессий КонсультантПлюс. Раз в минуту парсер на Scala/Spark разбирает сырые логи из MinIO в типизированные события ClickHouse, Refreshable Materialized Views в CH считают целевые метрики, Grafana визуализирует, GitHub Actions деплоит push'ем в main.
 
 ```mermaid
 flowchart TD
     USER((User))
 
     subgraph compute["Compute"]
-        GEN["generator (Rust)<br/>~10k sessions/hour<br/>non-uniform arrivals"]
-        SCH["scheduler (ofelia)<br/>@every 1m"]
-        SPARK["spark-job (Scala)<br/>ParseJob"]
+        GEN["generator (Rust)<br/>~10k sessions/hour<br/>non-uniform arrivals<br/>backdate 0..7d"]
+        SCH["scheduler (ofelia)<br/>parse @1m, cold-backfill @24h"]
+        SPARK["spark-job (Scala)<br/>ParseJob (incremental)"]
         SCH -.->|docker exec spark-submit| SPARK
     end
 
@@ -34,7 +21,8 @@ flowchart TD
 
     subgraph ch["ClickHouse 25.3"]
         BRZ["bronze.events<br/>ReplacingMergeTree"]
-        GOL["gold.*_daily<br/>Refreshable MV"]
+        WM["bronze.processed_files<br/>watermark"]
+        GOL["gold.*_daily<br/>Refreshable MV<br/>hot window = 10d"]
         EXP["exports.* MV<br/>S3 engine"]
     end
 
@@ -45,14 +33,16 @@ flowchart TD
     end
 
     GEN -->|PUT| SES
-    SPARK -->|read whole-text| SES
+    SPARK -->|list| SES
+    SPARK -->|anti-join| WM
     SPARK -->|JDBC insert| BRZ
-    BRZ -->|FROM .. FINAL| GOL
+    SPARK -->|JDBC insert| WM
+    BRZ -->|FROM .. FINAL<br/>WHERE date >= today()-10| GOL
     GOL --> EXP
 
     BRZ -.->|disk = S3| CHW
     GOL -.->|disk = S3| CHW
-    EXP -->|partition writes| PEX
+    EXP -->|parquet snapshot| PEX
 
     GRA -->|HTTP 8123| GOL
     PLY -->|HTTP 8123| BRZ
@@ -62,23 +52,226 @@ flowchart TD
     MCO -.->|browse| s3
 ```
 
-## Целевые метрики из `task.md`
+## Содержание
 
-1. **Количество карточных поисков, вернувших `ACC_45616`** — `gold.card_search_doc_hits_daily` в ClickHouse.
-2. **Количество открытий каждого документа через быстрый поиск (QS) за каждый день** — `gold.qs_doc_opens_daily` в ClickHouse.
+1. [Стек и ключевые решения](#стек-и-ключевые-решения)
+2. [Схемы таблиц](#схемы-таблиц)
+3. [Spark ParseJob](#spark-parsejob)
+4. [ClickHouse: hot window + cold backfill](#clickhouse-hot-window--cold-backfill)
+5. [Генератор данных](#генератор-данных)
+6. [Дашборд Grafana](#дашборд-grafana)
+7. [Быстрый старт](#быстрый-старт)
+8. [Целевые метрики и проверка](#целевые-метрики-и-проверка)
+9. [Известные ограничения](#известные-ограничения)
+10. [Остановка / reset](#остановка--reset)
 
-Эталонное значение для метрики 1 на исходных 10000 файлах: **479**.
+---
 
-## Требования
+## Стек и ключевые решения
 
-- Docker 24+ (тестировалось на colima на macOS aarch64)
-- Compose v2 (`docker-compose` или `docker compose`)
-- Свободные порты: **9000**, **9001**, **8123**, **9100**
-- Ресурсы VM: **≥ 4 CPU / 8 GiB RAM** (Spark + JVM + CH одновременно)
+| Сервис | Зачем |
+|---|---|
+| **MinIO (S3)** | Сырые логи + физический disk для CH MergeTree + parquet snapshots |
+| **ClickHouse 25.3** | Универсальный storage + query engine. Bronze (raw events), gold (aggregates через Refreshable MV), exports (open parquet) |
+| **Spark 3.5 / Scala 2.12** | Только парсер логов в типизированные `RawEvent`. Никакой агрегации — её делает CH MV |
+| **Rust generator** | Синтетическая нагрузка для демо «живого» пайплайна |
+| **ofelia scheduler** | Cron: `parse @every 1m`, `cold-backfill @every 24h` через `docker exec` |
+| **Grafana** | Дашборд с 11 панелями: метрики + распределения + heatmap'ы |
 
-  ```bash
-  colima start --cpu 4 --memory 8 --disk 60
-  ```
+### Почему ClickHouse, а не Iceberg/Nessie
+
+Изначальный план был open-format лейкхаус (Iceberg + Nessie catalog + Trino + AggregateJob). Сменили на ClickHouse-centric архитектуру:
+
+| Аспект | Iceberg-вариант | Наш CH-вариант |
+|---|---|---|
+| Сервисов в compose | 6 (+Nessie, +Trino) | 4 |
+| Время до агрегата | минуты (batch job) | секунды (Refreshable MV) |
+| Latency запроса | секунды (Trino) | миллисекунды (CH) |
+| Vendor lock | нет | **есть** на bronze/gold |
+
+Компромисс с lock'ом — через `exports.*_parquet` MV: раз в час дублирует bronze/gold в открытый parquet на `s3://parquet-exports/`. Если CH помрёт — данные читаемы любым движком.
+
+### Идемпотентность и инкрементальность
+
+- **ParseJob** — incremental через watermark `bronze.processed_files`. Каждый запуск читает только новые S3-файлы.
+- **CH Refreshable MV** — hot window 10 дней. Каждую минуту пересчитывает только последние 10 дней, не всё bronze.
+- **Cold partitions** (старше 10 дней) — раз заинициализированы через cold-backfill (CI-deploy step + daily scheduler), дальше остаются «frozen».
+- **ReplacingMergeTree** на всех таблицах — дедуп safety net поверх watermark'а.
+
+---
+
+## Схемы таблиц
+
+DDL: `clickhouse/init/01_schemas.sql`. В рантайме — `SHOW CREATE TABLE bronze.events FORMAT TSVRaw`.
+
+### `bronze.events` — типизированные события
+
+Универсальная wide-таблица для всех типов (SESSION_*, QS, CARD_SEARCH, DOC_OPEN, MALFORMED). Дизайн «одна таблица для всех» нужен чтобы сохранить порядок событий внутри сессии и связи (DOC_OPEN ↔ его поиск).
+
+| Поле | Тип | Зачем |
+|---|---|---|
+| `session_id` | `String` | Имя файла из S3 (`0`-`9999` seed, `synthetic-<uuid>` генератор). **Часть PK** |
+| `event_seq` | `Int32` | Порядковый номер внутри сессии, монотонно с 0. **Часть PK**, дедуп при re-runs |
+| `event_time` | `Nullable(DateTime)` | Время события из исходной строки лога |
+| `event_date` | `Nullable(Date)` | Производное; **partition key**, помесячная пардишн-пруна |
+| `event_type` | `LowCardinality(String)` | Discriminator: 6 значений, dict-encoded → 1 байт/строку |
+| `search_id` | `Nullable(String)` | Идентификатор поиска, связывает DOC_OPEN с породившим QS/CARD_SEARCH |
+| `search_kind` | `LowCardinality(Nullable(String))` | `'QS'` / `'CARD'`. Для DOC_OPEN резолвится через словарь по search_id |
+| `query_text` | `Nullable(String)` | Текст запроса (из `{...}` в QS) |
+| `card_params_json` | `String DEFAULT '[]'` | JSON-массив `[{param_id, value}]` — Spark JDBC не умеет CH Array, поэтому JSON |
+| `result_doc_ids_json` | `String DEFAULT '[]'` | JSON-массив документов из поиска. Источник Metric 1 (`arrayJoin(JSONExtractArrayRaw(...))`) |
+| `doc_id` | `Nullable(String)` | Идентификатор открытого документа (DOC_OPEN) |
+| `parse_error` | `Nullable(String)` | Текст ошибки для MALFORMED |
+| `raw_line` | `Nullable(String)` | Исходная строка для MALFORMED, чтобы можно было руками разобраться |
+| `ingested_at` | `DateTime DEFAULT now()` | **Version-column** ReplacingMergeTree. Используется `FROM ... FINAL` для дедупа |
+
+**Engine**: `ReplacingMergeTree(ingested_at)`, **Order**: `(session_id, event_seq)`, **Partition**: `toYYYYMM(event_date)`, **Storage**: `s3_main` (физически parquet-like парты в `s3://ch-warehouse/`).
+
+### `bronze.processed_files` — watermark
+
+| Поле | Тип | Зачем |
+|---|---|---|
+| `path` | `String` | Полный S3-путь, PK |
+| `processed_at` | `DateTime DEFAULT now()` | Когда обработан. Version-column |
+| `events_count` | `UInt32 DEFAULT 0` | Сколько событий выпарсено (на будущее, сейчас всегда 0) |
+
+ParseJob делает `SELECT DISTINCT path` для anti-join'а с листингом S3.
+
+### `gold.card_search_doc_hits_daily` — Metric 1
+
+| Поле | Тип |
+|---|---|
+| `date` | `Date` |
+| `doc_id` | `String` |
+| `hits` | `UInt64` |
+| `computed_at` | `DateTime` |
+
+**Engine**: `ReplacingMergeTree(computed_at)`, **Order**: `(date, doc_id)`, **Partition**: `toYYYYMM(date)`.
+
+Сколько раз каждый документ появился в результатах CARD_SEARCH'а, разрез по дню.
+
+### `gold.qs_doc_opens_daily` — Metric 2
+
+Симметричная таблица для DOC_OPEN, отфильтрованных по `search_kind='QS'`.
+
+### `exports.*_parquet` — open snapshots
+
+Три таблицы на CH `S3` engine (не MergeTree) с partition by `toYYYYMM(date)`. Запись через MV каждый час. Парты лежат в `s3://parquet-exports/` как обычные parquet — читаются любым движком (DuckDB, pandas, Spark).
+
+---
+
+## Spark ParseJob
+
+`spark-jobs/src/main/scala/ru/consultant/lakehouse/jobs/ParseJob.scala`. Запускается ofelia каждую минуту через `docker exec spark-job spark-submit ...`. Один прогон:
+
+1. **Read watermark**: `SELECT DISTINCT path FROM bronze.processed_files` через JDBC, бродкаст set'а путей по executor'ам.
+2. **List S3**: `binaryFiles("s3a://sessions/")` — RDD из `(path, bytes)`.
+3. **Anti-join**: `.filter { case (p, _) => !processedBC.value.contains(p) }`, кэш RDD.
+4. **Parse**: для каждого нового файла — декод cp1251 → `SessionParser.parse(sessionId, content)` → `Seq[RawEvent]`. Парсер чистый Scala, без Spark-зависимостей.
+5. **Write bronze**: DataFrame → JDBC append в `bronze.events`. Дубли (если race) дедупит `ReplacingMergeTree(ingested_at)`.
+6. **Advance watermark**: пути обработанных файлов → JDBC append в `bronze.processed_files`.
+
+`flock -n /tmp/parse.lock` в cron-команде предотвращает overlap, если предыдущий запуск ещё не закончился.
+
+### `SessionParser` — конечный автомат
+
+`parser/SessionParser.scala`. 3 состояния:
+- **Neutral** — между блоками
+- **AwaitingQsResults(ts, query)** — увидели `QS`, ждём строку результатов
+- **InCardSearch(ts, params, awaitingResults)** — собираем параметры CARD_SEARCH'а; флаг `awaitingResults` отделяет «до CARD_END» от «после CARD_END»
+
+Сборка многострочных событий (`QS` + результаты, `CARD_SEARCH_START` + `$params` + `CARD_END` + результаты) идёт через накопление в стейте. Нарушения протокола (например, `$param` после `CARD_END`) → `RawEvent.malformed`.
+
+---
+
+## ClickHouse: hot window + cold backfill
+
+`gold.*_daily_mv` — Refreshable MV с `REFRESH EVERY 1 MINUTE` и `WHERE event_date >= today() - 10`. На каждой итерации:
+
+1. `SELECT event_date, doc_id, count() FROM bronze.events FINAL WHERE ... AND event_date >= today() - 10`
+2. `INSERT INTO gold.*_daily` — новые строки с `computed_at = now()`
+3. `ReplacingMergeTree(computed_at)` дедуплицирует по `(date, doc_id)`, оставляя последнюю версию
+
+Cold partitions (`event_date < today() - 10`) MV **никогда не трогает** — экономия CPU. Историческое наполнение делается отдельно:
+
+- **CI workflow `cold-backfill one-shot`** — выполняется при каждом push'е после `compose up + sleep 120s`
+- **Scheduler `cold-backfill @every 24h`** — daily safety net на случай, если когда-нибудь появятся late-arriving cold events
+
+Hot window = 10 дней >= backdating range генератора (7 дней) + 3 дня safety margin.
+
+**Важно для запросов** к `gold.*`: всегда использовать `FROM ... FINAL`, иначе ReplacingMergeTree вернёт все версии до фоновой склейки парт'ов → счётчики раздуты.
+
+---
+
+## Генератор данных
+
+`generator/src/`, ~250 LOC Rust. Три модуля: `main.rs` (Poisson scheduler), `dist.rs` (snapshot распределений), `session.rs` (рендер сессии).
+
+### Snapshot реальных распределений
+
+При первом старте читает 500 случайных файлов из S3, выделяет:
+- Распределение длин сессий
+- Частоты типов событий (QS/CARD/DOC_OPEN)
+- Gaps между событиями
+- Top-5000 doc_ids
+- 200 примеров queries
+
+Кэширует в `/var/cache/generator/distributions.json` для рестартов.
+
+### Non-homogeneous Poisson по часу
+
+Каждый час `plan_arrivals(10_000, 3600.0)`:
+1. Density `f(u) = 1 + 0.5·sin(2π·u) + 0.3·sin(6π·u)` — две синусоиды
+2. Acceptance-rejection sampling против `f_max = 1.8`, ~55% accept rate
+3. Sorted 10k offset-ов в `[0, 3600)`
+
+Цикл: sleep до каждого target-времени → `tokio::spawn` отправляет S3 PUT параллельно. Peak-to-trough ≈ 2× — реалистичный «дышащий» поток с волнами.
+
+### Backdating
+
+`SESSION_START = Utc::now() - rand(0..7д)`. Прибытие файла в S3 — live (по Poisson-расписанию), но **внутреннее время** — случайная точка в последних 7 сутках. Это наполняет дашборд за «последнюю неделю» живой плотностью данных вместо тонкой сегодняшней полоски.
+
+---
+
+## Дашборд Grafana
+
+`grafana/dashboards/lakehouse.json`. Provisioning заливает datasource и dashboard автоматически при старте контейнера.
+
+### Метрики из task.md
+
+| Панель | Что показывает |
+|---|---|
+| **Метрика 1: ACC_45616 в результатах карточного поиска** | `sum(hits)` из `gold.card_search_doc_hits_daily FINAL WHERE doc_id='ACC_45616'`. Эталон 479 (на чистой истории, без синтетики) |
+| **Метрика 2: топ-20 документов по открытиям через QS** | Table из `gold.qs_doc_opens_daily FINAL ORDER BY opens DESC` |
+| **Hits ACC_45616 timeseries** | Метрика 1 в разрезе дней (`event_date`) |
+| **Top-3 doc opens timeseries** | Топ-3 doc'а по сумме opens, разложенные по дням |
+
+### Pipeline observability
+
+| Панель | Что показывает |
+|---|---|
+| **Всего событий в bronze** | `count() FROM bronze.events FINAL` |
+| **Уникальных сессий** | `countDistinct(session_id) FROM bronze.events` |
+| **Распределение событий по типам** | Piechart по `event_type` |
+
+### Data exploration
+
+| Панель | Что показывает |
+|---|---|
+| **Топ-20 QS-запросов** | Текст запроса + частота |
+| **Сложность карточного поиска** | Bar chart: распределение по кол-ву `card_params` в одном CARD_SEARCH |
+| **Длина сессии за 24h** | avg/p50/p90/p99 событий на сессию |
+| **Активность: час × день недели** | Heatmap событий по `toHour × toDayOfWeek` за последние 7 дней |
+
+### UI URLs
+
+| URL | Что |
+|---|---|
+| `http://<host>:8010` | Grafana (admin creds = `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD`) |
+| `http://<host>:8011/play` | ClickHouse Play — встроенный SQL editor |
+| `http://<host>:8012` | MinIO Console — браузер бакетов |
+
+---
 
 ## Быстрый старт
 
@@ -91,172 +284,123 @@ docker-compose up -d --build
 
 После `up`:
 - `mc-init` создаёт бакеты `sessions/`, `warehouse/`, `ch-warehouse/`, `parquet-exports/` и заливает 10000 файлов из `./data/` в `s3://sessions/`
-- `clickhouse` поднимается, применяет DDL: `bronze.events`, `gold.*`, `exports.*`, 5 Refreshable MVs
-- `generator` снимает распределения с 500 файлов и каждые 5 сек подсыпает синтетическую сессию
-- `spark-job` стоит idle JVM
-- `scheduler` (ofelia) каждую минуту вызывает `docker exec spark-job spark-submit ParseJob`
+- `clickhouse` применяет DDL: `bronze.events`, `bronze.processed_files`, `gold.*`, `exports.*`, 5 Refreshable MVs
+- `generator` снимает распределения с 500 файлов, начинает Poisson-поток ~10k сессий/час с backdating'ом
+- `spark-job` стоит idle JVM, ofelia дёргает ParseJob по cron каждую минуту
 
-## Bootstrap
-
-После `up` ParseJob запускается по cron автоматически (~через минуту). Чтобы дождаться первого полного прогона:
+Через ~2 минуты bronze наполнен ~135k событий из 10k seed-файлов, MV пересчитала hot-партиции. Чтобы исторические дате попали в `gold.*` сразу (а не через сутки от scheduler'а):
 
 ```bash
-# подождать ~2 минуты — за это время:
-# 1. cron-парсер прогнал 10k сессий в ch.bronze.events
-# 2. Refreshable MV gold.* пересчитала метрики
+docker compose exec -T clickhouse clickhouse-client --user admin --password admin12345 --query "INSERT INTO gold.card_search_doc_hits_daily SELECT event_date AS date, JSONExtractString(arrayJoin(JSONExtractArrayRaw(result_doc_ids_json))) AS doc_id, count() AS hits, now() AS computed_at FROM bronze.events FINAL WHERE event_type = 'CARD_SEARCH' AND event_date IS NOT NULL AND event_date < today() - 10 GROUP BY date, doc_id"
 
-sleep 120
-
-# проверить bronze
-docker-compose exec clickhouse clickhouse-client --user admin --password admin12345 \
-  --query "SELECT count() FROM bronze.events FINAL"
-# ожидается: ~135 000 (135k events from 10k sessions + ParseJob может ингестить дубли, FINAL дедупит)
+docker compose exec -T clickhouse clickhouse-client --user admin --password admin12345 --query "INSERT INTO gold.qs_doc_opens_daily SELECT event_date AS open_date, doc_id, count() AS opens, now() AS computed_at FROM bronze.events FINAL WHERE event_type = 'DOC_OPEN' AND search_kind = 'QS' AND doc_id IS NOT NULL AND event_date IS NOT NULL AND event_date < today() - 10 GROUP BY event_date, doc_id"
 ```
 
-## Чтение результатов
+В CI/CD workflow этот step есть автоматически после деплоя.
 
-**Метрика 1** (карточные поиски, вернувшие `ACC_45616`):
+---
 
-```bash
-docker-compose exec clickhouse clickhouse-client --user admin --password admin12345 --query "
+## Целевые метрики и проверка
+
+**Metric 1** — количество карточных поисков, вернувших `ACC_45616`:
+
+```sql
 SELECT sum(hits) AS total
-FROM gold.card_search_doc_hits_daily
+FROM gold.card_search_doc_hits_daily FINAL
 WHERE doc_id = 'ACC_45616'
-  AND date <= '2026-05-28'    -- фильтр исторических данных (отсекает синтетику от генератора)
-"
+  AND date <= '2026-05-28'    -- отсечь синтетику, оставить только историческое
 ```
 
-Ожидается: **479**.
+Эталон: **479** на исходных 10000 seed-файлах.
 
-**Метрика 2** (top открытий через QS):
+**Metric 2** — открытия документов через QS, по дням:
 
-```bash
-docker-compose exec clickhouse clickhouse-client --user admin --password admin12345 --query "
+```sql
 SELECT open_date, doc_id, opens
-FROM gold.qs_doc_opens_daily
+FROM gold.qs_doc_opens_daily FINAL
 WHERE open_date <= '2026-05-28'
 ORDER BY opens DESC
 LIMIT 50
-"
 ```
 
-Полный экспорт метрики 2 в CSV:
+Полный экспорт в CSV:
 
 ```bash
-docker-compose exec clickhouse clickhouse-client --user admin --password admin12345 --query "
-SELECT open_date, doc_id, opens
-FROM gold.qs_doc_opens_daily
-WHERE open_date <= '2026-05-28'
-ORDER BY open_date, opens DESC
-FORMAT CSV
+docker compose exec clickhouse clickhouse-client --user admin --password admin12345 --query "
+  SELECT open_date, doc_id, opens FROM gold.qs_doc_opens_daily FINAL 
+  WHERE open_date <= '2026-05-28' ORDER BY open_date, opens DESC FORMAT CSV
 " > metric2.csv
 ```
+
+---
 
 ## Где данные физически
 
 | Слой | Формат | Физически |
 |---|---|---|
 | Сырые сессии | text (cp1251) | `s3://sessions/{0..9999, synthetic-*}` |
-| **bronze** (типизированные события) | **CH MergeTree** | `s3://ch-warehouse/...` (CH-native binary) |
-| **gold** (агрегированные метрики) | **CH MergeTree** | `s3://ch-warehouse/...` (CH-native binary) |
-| Parquet snapshot bronze | open parquet | `s3://parquet-exports/bronze/` (refresh раз в час) |
-| Parquet snapshot gold | open parquet | `s3://parquet-exports/gold/` (refresh раз в час) |
-| CH metadata (schema, marks cache) | CH-internal | named volume `clickhouse-data` |
+| **bronze.events** | CH MergeTree | `s3://ch-warehouse/...` (CH-native binary) |
+| **bronze.processed_files** | CH MergeTree | `s3://ch-warehouse/...` |
+| **gold.*** | CH MergeTree | `s3://ch-warehouse/...` |
+| Parquet snapshots | open parquet | `s3://parquet-exports/{bronze,gold}/` (refresh @1h) |
+| CH metadata | CH-internal | named volume `clickhouse-data` |
 
-**Vendor lock:** bronze/gold в формате CH (читается только ClickHouse). Сырые сессии (`s3://sessions/`) и parquet-exports (`s3://parquet-exports/`) — открытые форматы, могут быть прочитаны любым движком.
+**Vendor lock** на bronze/gold — осознанный. Если CH помрёт: данные в `s3://ch-warehouse/` сохраняются, но без CH нечитаемы. Recovery — поднять CH на том же volume `clickhouse-data`. Открытый escape — `s3://parquet-exports/`.
 
-## UI
+---
 
-| URL | Что |
-|---|---|
-| <http://localhost:9001> | MinIO Console (admin / admin12345) — посмотреть файлы в бакетах |
-| <http://localhost:8123/play> | ClickHouse Play — встроенный SQL editor с pretty-таблицами |
+## Известные ограничения
 
-ClickHouse Play — основной интерфейс для ad-hoc анализа. Пример:
+Честный список, что не сделано:
 
-```sql
--- Откройте http://localhost:8123/play, введите:
-SELECT date, doc_id, hits
-FROM gold.card_search_doc_hits_daily
-WHERE doc_id = 'ACC_45616'
-ORDER BY date
-LIMIT 100
+- **Тестов нет** — парсер чистый Scala, был бы хороший candidate для scalatest. README не assertit `479` через CI.
+- **Дизайн-спека и план в `docs/`** описывают старый Iceberg-вариант — устарели, помечено в preamble.
+- **Timezone парсера** — `ZoneOffset.UTC`. Исторические логи КонсультантПлюс почти точно МСК → `event_time` смещён на 3 часа. На метрики (через `event_date`) не влияет.
+- **Malformed events** парсятся в bronze (`event_type='MALFORMED'`), но ни одна Grafana панель их не показывает. Если парсер сломается — никто не узнает.
+- **`spark.sql.codegen.wholeStage=false`** — на aarch64 (M-чипы через colima) Hotspot падает SIGSEGV при codegen-агрегациях. Отключение лечит.
+- **CH JDBC driver `0.4.6-all`** — последняя версия с реально self-contained `-all` jar. 0.6.x разбил classifier → `NoClassDefFoundError`. См. `spark-jobs/Dockerfile`.
+- **Spark JDBC не умеет CH Array** — workaround через JSON-сериализацию (`card_params_json`, `result_doc_ids_json`), парсинг обратно в MV через `JSONExtractArrayRaw`.
+- **CH listen_host** — по умолчанию `127.0.0.1`, другие контейнеры не подключаются. `clickhouse/config.d/listen.xml` ставит `0.0.0.0`.
+
+---
+
+## Остановка / reset
+
+```bash
+docker compose down            # остановить, оставить volumes
+docker compose down -v         # + удалить volumes (полный reset)
 ```
 
-## Сервисы compose
+**Когда нужен volume reset**: если меняли `01_schemas.sql` или dashboard provisioning, а у CH/Grafana уже есть существующий volume — init-script не перезапустится, схемы не обновятся. Wipe volumes → следующий `up` применит свежие конфиги.
 
-| Сервис | Назначение |
-|---|---|
-| `minio` | S3-совместимое объектное хранилище для raw, ch-warehouse, parquet-exports |
-| `mc-init` | One-shot: бакеты + загрузка 10k seed-файлов |
-| `clickhouse` | ClickHouse 25.3, bronze+gold+exports на S3 disk |
-| `spark-job` | Long-running idle JVM. ParseJob (Scala) запускается по cron через `docker exec` |
-| `generator` | Rust-сервис, подсыпает синтетические сессии каждые 5 сек |
-| `scheduler` | ofelia: parse `@every 1m` через flock (без overlap) |
+---
 
 ## Структура проекта
 
 ```
 final/
 ├── docker-compose.yml
-├── .env                       # MinIO/CH/AWS credentials — single source of truth
-├── data/                      # 10k seed файлов (исходники task.md)
-├── docs/superpowers/{specs,plans}/   # дизайн + план
+├── .env                       # MinIO/CH/AWS creds — single source of truth
+├── data/                      # 10k seed файлов (сдвинутые таймстемпы до 2026-05-28)
+├── docs/superpowers/{specs,plans}/   # дизайн + план (УСТАРЕЛИ, описывают Iceberg)
 ├── clickhouse/
 │   ├── config.d/storage.xml   # S3 disk через from_env
 │   ├── config.d/listen.xml    # listen_host = 0.0.0.0
-│   └── init/01_schemas.sql    # bronze + gold + exports + 5 Refreshable MVs
-├── scheduler/config.ini       # ofelia parse-cron + flock
-├── generator/                 # Rust generator
+│   └── init/01_schemas.sql    # bronze + bronze.processed_files + gold + exports + MV
+├── scheduler/config.ini       # ofelia: parse @1m, cold-backfill @24h
+├── grafana/
+│   ├── provisioning/{datasources,dashboards}/  # provisioning yaml
+│   └── dashboards/lakehouse.json               # 11 панелей
+├── generator/                 # Rust generator (Cargo.toml + src/{main,dist,session}.rs)
 └── spark-jobs/                # Scala application
     ├── pom.xml
-    ├── Dockerfile             # multi-stage maven build → apache/spark + CH JDBC driver
+    ├── Dockerfile             # multi-stage: maven build → apache/spark + CH JDBC
     ├── conf/spark-defaults.conf
     └── src/main/scala/ru/consultant/lakehouse/
         ├── model/             # RawEvent, CardParam, EventType
-        ├── parser/            # TimeParser, EventLineParser, SessionParser (pure Scala)
-        └── jobs/              # SparkApp, ParseJob (JDBC write to CH)
+        ├── parser/            # TimeParser, EventLineParser, SessionParser
+        ├── config/            # AppConfig (Typesafe Config)
+        └── jobs/              # SparkApp, ParseJob
 ```
 
-## Известные тонкости
-
-### 1. CH JDBC driver = `0.4.6-all` (не последний)
-
-В Dockerfile отдельно скачивается `clickhouse-jdbc-0.4.6-all.jar` (self-contained, ~17 MB). Версии 0.6.x разбили `all` classifier — он перестал bundle'ить транзитивные deps (`com.clickhouse.client.*`, HttpClient5), это приводит к `NoClassDefFoundError`. 0.4.6 — последняя версия с реально self-contained `-all` jar.
-
-### 2. Spark JDBC не поддерживает `ArrayType` для CH
-
-Поля `card_params` и `result_doc_ids` (Array<String>) сериализуются в **JSON-строки** на стороне Spark (поля `card_params_json`, `result_doc_ids_json`). На стороне CH парсятся обратно через `JSONExtractArrayRaw` в MV. Это workaround для отсутствия CH Spark dialect — альтернатива была бы `clickhouse-spark-connector` от Altinity, но он добавляет существенную зависимость.
-
-### 3. `ReplacingMergeTree(ingested_at)` для bronze + `FROM bronze.events FINAL` в MV
-
-ParseJob не отслеживает обработанные файлы и пишет в bronze каждый запуск. Дубли по `(session_id, event_seq)` дедуплицирует `ReplacingMergeTree` в background. **MV читает с `FINAL`** — это форсит дедуп при чтении, поэтому даже до фоновой склейки cтабильно правильные числа.
-
-### 4. CH listen_host
-
-В дефолтной CH-конфигурации server слушает только `127.0.0.1` — другие контейнеры compose не могут подключиться. `clickhouse/config.d/listen.xml` ставит `<listen_host>0.0.0.0</listen_host>`.
-
-### 5. `spark.sql.codegen.wholeStage=false`
-
-В `spark-defaults.conf` отключён whole-stage codegen — на aarch64 (M-чипы через colima) Hotspot падает с SIGSEGV в `ConcurrentHashTable::get_node` при codegen-агрегациях. Без codegen стабильно. Для x86 проверки не критично, но не мешает.
-
-### 6. Hot-window для метрик
-
-Refresh MV каждую минуту делает **full recompute** по bronze. На нашем объёме (~135k rows) это миллисекунды. На больших объёмах стоит добавить partition pruning по `event_date >= today() - N` в SELECT.
-
-### 7. Parquet exports: per-partition overwrite
-
-CH S3 engine с `PARTITION BY toYYYYMMDD(event_date)` пишет per-day файлы. Каждый refresh exports MV перезаписывает файлы тех partition'ов, что изменились (overwrite by key). За счёт этого нет накопления старых снимков.
-
-### 8. Vendor lock на bronze/gold — осознанный
-
-CH MergeTree формат закрытый, читается только CH. Это компромисс: за это мы получаем killer-фичи (Refreshable MV для real-time agg, sub-second SQL queries) без необходимости в Iceberg/Delta + второго query engine. Escape hatch — `s3://parquet-exports/` (раз в час open snapshot).
-
-Если CH-инстанс падает: данные в `s3://ch-warehouse/` остаются (CH формат, не open), но не читаемы без CH. Recovery — поднять CH с тем же volume `clickhouse-data` (хранит metadata) → таблицы доступны как и были. Если потерян `clickhouse-data` volume — нужен `ATTACH TABLE ... FROM ...` для каждой таблицы. Сырые сессии (`s3://sessions/`) и snapshot (`s3://parquet-exports/`) всегда переживут.
-
-## Остановка / reset
-
-```bash
-docker-compose down              # остановить, оставить volumes
-docker-compose down -v           # + удалить volumes (полный reset)
-```
+CI/CD: `.github/workflows/ci-cd.yml` — 4 джоба (Scala build, Rust build, compose validate, deploy). Push в main → SSH-деплой на хост с одношотовым cold-backfill после старта.

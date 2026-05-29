@@ -216,7 +216,7 @@
     {
       "id": 9,
       "type": "barchart",
-      "title": "Сложность карточного поиска (кол-во параметров)",
+      "title": "Распределение событий на сессию",
       "gridPos": {"x": 12, "y": 29, "w": 12, "h": 8},
       "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
       "targets": [
@@ -224,7 +224,7 @@
           "refId": "A",
           "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
           "editorType": "sql",
-          "rawSql": "SELECT toString(length(JSONExtractArrayRaw(card_params_json))) AS n_params, count() AS searches FROM bronze.events FINAL WHERE event_type = 'CARD_SEARCH' GROUP BY n_params ORDER BY toUInt32(n_params)",
+          "rawSql": "SELECT multiIf(n=1, '1 событие', n<=5, '2-5', n<=10, '6-10', n<=20, '11-20', n<=50, '21-50', '50+') AS bucket, count() AS sessions FROM (SELECT session_id, count() AS n FROM bronze.events FINAL GROUP BY session_id) GROUP BY bucket ORDER BY min(n)",
           "format": 1,
           "queryType": "table"
         }
@@ -236,7 +236,7 @@
         }
       },
       "options": {
-        "xField": "n_params",
+        "xField": "bucket",
         "orientation": "vertical",
         "showValue": "auto",
         "legend": {"showLegend": false},
@@ -276,8 +276,51 @@
     },
     {
       "id": 11,
-      "type": "heatmap",
+      "type": "table",
       "title": "Активность: час × день недели (последние 7 дней)",
+      "gridPos": {"x": 0, "y": 45, "w": 24, "h": 8},
+      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+          "editorType": "sql",
+          "rawSql": "SELECT CASE toDayOfWeek(event_time) WHEN 1 THEN 'Пн' WHEN 2 THEN 'Вт' WHEN 3 THEN 'Ср' WHEN 4 THEN 'Чт' WHEN 5 THEN 'Пт' WHEN 6 THEN 'Сб' ELSE 'Вс' END AS day, countIf(toHour(event_time)=0) AS \"00\", countIf(toHour(event_time)=1) AS \"01\", countIf(toHour(event_time)=2) AS \"02\", countIf(toHour(event_time)=3) AS \"03\", countIf(toHour(event_time)=4) AS \"04\", countIf(toHour(event_time)=5) AS \"05\", countIf(toHour(event_time)=6) AS \"06\", countIf(toHour(event_time)=7) AS \"07\", countIf(toHour(event_time)=8) AS \"08\", countIf(toHour(event_time)=9) AS \"09\", countIf(toHour(event_time)=10) AS \"10\", countIf(toHour(event_time)=11) AS \"11\", countIf(toHour(event_time)=12) AS \"12\", countIf(toHour(event_time)=13) AS \"13\", countIf(toHour(event_time)=14) AS \"14\", countIf(toHour(event_time)=15) AS \"15\", countIf(toHour(event_time)=16) AS \"16\", countIf(toHour(event_time)=17) AS \"17\", countIf(toHour(event_time)=18) AS \"18\", countIf(toHour(event_time)=19) AS \"19\", countIf(toHour(event_time)=20) AS \"20\", countIf(toHour(event_time)=21) AS \"21\", countIf(toHour(event_time)=22) AS \"22\", countIf(toHour(event_time)=23) AS \"23\" FROM bronze.events FINAL WHERE event_type='SESSION_START' AND event_time >= now() - INTERVAL 7 DAY GROUP BY toDayOfWeek(event_time) ORDER BY toDayOfWeek(event_time)",
+          "format": 1,
+          "queryType": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "cellOptions": {"type": "color-background", "mode": "gradient"},
+            "align": "center",
+            "filterable": false
+          },
+          "color": {"mode": "continuous-YlOrRd"},
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "day"},
+            "properties": [
+              {"id": "custom.cellOptions", "value": {"type": "auto"}},
+              {"id": "custom.width", "value": 50},
+              {"id": "custom.align", "value": "left"}
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {"show": false}
+      }
+    },
+    {
+      "id": 12,
+      "type": "barchart",
+      "title": "Длительность сессии",
       "gridPos": {"x": 12, "y": 37, "w": 12, "h": 8},
       "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
       "targets": [
@@ -285,17 +328,316 @@
           "refId": "A",
           "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
           "editorType": "sql",
-          "rawSql": "SELECT toStartOfHour(event_time) AS t, toString(toDayOfWeek(event_time)) AS dow, count() AS events FROM bronze.events FINAL WHERE event_type='SESSION_START' AND event_time >= now() - INTERVAL 7 DAY GROUP BY t, dow ORDER BY t, dow",
+          "rawSql": "SELECT multiIf(dur<60, '< 1 мин', dur<300, '1-5 мин', dur<900, '5-15 мин', dur<1800, '15-30 мин', dur<3600, '30-60 мин', '> 1 час') AS bucket, count() AS sessions FROM (SELECT session_id, dateDiff('second', min(event_time), max(event_time)) AS dur FROM bronze.events FINAL WHERE event_time IS NOT NULL GROUP BY session_id) GROUP BY bucket ORDER BY min(dur)",
+          "format": 1,
+          "queryType": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"axisLabel": "сессий", "fillOpacity": 80, "lineWidth": 1}
+        }
+      },
+      "options": {
+        "xField": "bucket",
+        "orientation": "vertical",
+        "showValue": "auto",
+        "legend": {"showLegend": false},
+        "tooltip": {"mode": "single"}
+      }
+    },
+    {
+      "id": 13,
+      "type": "piechart",
+      "title": "Поведенческий профиль сессий",
+      "gridPos": {"x": 0, "y": 53, "w": 12, "h": 8},
+      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+          "editorType": "sql",
+          "rawSql": "SELECT multiIf(qs_n>0 AND card_n>0, 'QS + CARD', qs_n>0, 'только QS', card_n>0, 'только CARD', doc_n>0, 'только просмотр', 'без активности') AS pattern, count() AS sessions FROM (SELECT session_id, countIf(event_type='QS') AS qs_n, countIf(event_type='CARD_SEARCH') AS card_n, countIf(event_type='DOC_OPEN') AS doc_n FROM bronze.events FINAL GROUP BY session_id) GROUP BY pattern ORDER BY sessions DESC",
           "format": 1,
           "queryType": "table"
         }
       ],
       "options": {
-        "calculate": false,
-        "yAxis": {"axisPlacement": "left", "reverse": false},
-        "color": {"mode": "scheme", "scheme": "Spectral", "exponent": 0.5, "steps": 64},
-        "cellGap": 1,
-        "tooltip": {"show": true, "yHistogram": false}
+        "pieType": "donut",
+        "tooltip": {"mode": "single"},
+        "legend": {"showLegend": true, "displayMode": "list", "placement": "right", "values": ["value", "percent"]},
+        "reduceOptions": {"calcs": [], "fields": "/^sessions$/", "values": true}
+      }
+    },
+    {
+      "id": 14,
+      "type": "barchart",
+      "title": "Открытий документов на сессию",
+      "gridPos": {"x": 12, "y": 53, "w": 12, "h": 8},
+      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+          "editorType": "sql",
+          "rawSql": "SELECT multiIf(opens=0, '0 (bounce)', opens<=2, '1-2', opens<=5, '3-5', opens<=10, '6-10', '10+') AS bucket, count() AS sessions FROM (SELECT session_id, countIf(event_type='DOC_OPEN') AS opens FROM bronze.events FINAL GROUP BY session_id) GROUP BY bucket ORDER BY min(opens)",
+          "format": 1,
+          "queryType": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"axisLabel": "сессий", "fillOpacity": 80, "lineWidth": 1}
+        }
+      },
+      "options": {
+        "xField": "bucket",
+        "orientation": "vertical",
+        "showValue": "auto",
+        "legend": {"showLegend": false},
+        "tooltip": {"mode": "single"}
+      }
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Новые сессии в минуту (live — Poisson генератора)",
+      "gridPos": {"x": 0, "y": 61, "w": 24, "h": 8},
+      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+          "editorType": "sql",
+          "rawSql": "SELECT toStartOfMinute(event_time) AS t, count() AS new_sessions FROM bronze.events FINAL WHERE event_type = 'SESSION_START' AND event_time >= now() - INTERVAL 1 HOUR GROUP BY t ORDER BY t",
+          "format": 1,
+          "queryType": "timeseries"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {"drawStyle": "bars", "lineWidth": 1, "fillOpacity": 80},
+          "color": {"mode": "thresholds"},
+          "thresholds": {"steps": [{"color": "green", "value": null}]}
+        }
+      },
+      "options": {"legend": {"showLegend": false}, "tooltip": {"mode": "single"}}
+    },
+    {
+      "id": 16,
+      "type": "stat",
+      "title": "Watermark: всего обработано файлов",
+      "gridPos": {"x": 0, "y": 69, "w": 6, "h": 5},
+      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+          "editorType": "sql",
+          "rawSql": "SELECT count() AS files FROM bronze.processed_files",
+          "format": 1,
+          "queryType": "table"
+        }
+      ],
+      "options": {
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"steps": [{"color": "blue", "value": null}]},
+          "displayName": "Files"
+        }
+      }
+    },
+    {
+      "id": 17,
+      "type": "stat",
+      "title": "ParseJob throughput за час",
+      "gridPos": {"x": 6, "y": 69, "w": 6, "h": 5},
+      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+          "editorType": "sql",
+          "rawSql": "SELECT count() AS files_last_hour FROM bronze.processed_files WHERE processed_at >= now() - INTERVAL 1 HOUR",
+          "format": 1,
+          "queryType": "table"
+        }
+      ],
+      "options": {
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"steps": [{"color": "green", "value": null}]},
+          "displayName": "Files/h"
+        }
+      }
+    },
+    {
+      "id": 18,
+      "type": "stat",
+      "title": "Время с последнего ParseJob",
+      "gridPos": {"x": 12, "y": 69, "w": 6, "h": 5},
+      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+          "editorType": "sql",
+          "rawSql": "SELECT dateDiff('second', max(processed_at), now()) AS seconds_since FROM bronze.processed_files",
+          "format": 1,
+          "queryType": "table"
+        }
+      ],
+      "options": {
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"steps": [
+            {"color": "green", "value": null},
+            {"color": "orange", "value": 120},
+            {"color": "red", "value": 600}
+          ]},
+          "unit": "s",
+          "displayName": "Last run"
+        }
+      }
+    },
+    {
+      "id": 19,
+      "type": "stat",
+      "title": "Parquet snapshot bronze (last partition date)",
+      "gridPos": {"x": 18, "y": 69, "w": 6, "h": 5},
+      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+          "editorType": "sql",
+          "rawSql": "SELECT toString(max(event_date)) AS last_date FROM exports.bronze_events_parquet",
+          "format": 1,
+          "queryType": "table"
+        }
+      ],
+      "options": {
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"steps": [{"color": "purple", "value": null}]},
+          "displayName": "Parquet up to"
+        }
+      }
+    },
+    {
+      "id": 20,
+      "type": "stat",
+      "title": "Parquet файлов в S3: bronze",
+      "gridPos": {"x": 0, "y": 74, "w": 8, "h": 5},
+      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+          "editorType": "sql",
+          "rawSql": "SELECT count(DISTINCT _file) AS files FROM exports.bronze_events_parquet",
+          "format": 1,
+          "queryType": "table"
+        }
+      ],
+      "options": {
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"steps": [{"color": "purple", "value": null}]},
+          "displayName": "bronze parquet files"
+        }
+      }
+    },
+    {
+      "id": 21,
+      "type": "stat",
+      "title": "Parquet файлов в S3: gold card_hits",
+      "gridPos": {"x": 8, "y": 74, "w": 8, "h": 5},
+      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+          "editorType": "sql",
+          "rawSql": "SELECT count(DISTINCT _file) AS files FROM exports.card_search_doc_hits_daily_parquet",
+          "format": 1,
+          "queryType": "table"
+        }
+      ],
+      "options": {
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"steps": [{"color": "purple", "value": null}]},
+          "displayName": "card_hits parquet files"
+        }
+      }
+    },
+    {
+      "id": 22,
+      "type": "stat",
+      "title": "Parquet файлов в S3: gold qs_opens",
+      "gridPos": {"x": 16, "y": 74, "w": 8, "h": 5},
+      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "grafana-clickhouse-datasource", "uid": "clickhouse-main"},
+          "editorType": "sql",
+          "rawSql": "SELECT count(DISTINCT _file) AS files FROM exports.qs_doc_opens_daily_parquet",
+          "format": 1,
+          "queryType": "table"
+        }
+      ],
+      "options": {
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"steps": [{"color": "purple", "value": null}]},
+          "displayName": "qs_opens parquet files"
+        }
       }
     }
   ]
