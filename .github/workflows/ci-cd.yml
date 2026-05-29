@@ -132,6 +132,7 @@ jobs:
             cd "$DEPLOY_PATH"
             docker compose pull --ignore-pull-failures || true
             docker compose up -d --build --remove-orphans
+            docker compose up -d --force-recreate --no-deps grafana
             docker compose ps
           EOF
 
